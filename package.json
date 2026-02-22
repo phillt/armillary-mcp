@@ -4,10 +4,13 @@
   "description": "",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "mcp-docs": "dist/cli.js"
+  },
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts",
-    "generate": "tsx src/cli.ts",
-    "watch": "tsx src/cli.ts --watch",
+    "build": "tsup",
+    "generate": "tsx src/cli.ts build",
+    "watch": "tsx src/cli.ts watch",
     "test": "vitest run"
   },
   "keywords": [],
