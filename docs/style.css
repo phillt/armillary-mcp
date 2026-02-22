@@ -1,23 +1,23 @@
 /* ── Custom Properties ─────────────────────────────────── */
 :root {
   --bg: #000000;
-  --bg-alt: #0a0a0a;
-  --text: #e8eff6;
-  --text-muted: #8eafc6;
-  --accent: #89cff0;
-  --accent-hover: #b0dff8;
-  --border: #1a2a3a;
-  --code-bg: #0b1118;
-  --code-text: #c5ddf0;
+  --bg-alt: #0a0a0f;
+  --text: #e4e8f4;
+  --text-muted: #9a9ec0;
+  --accent: #7eaef0;
+  --accent-hover: #a89cf0;
+  --border: #1e1e36;
+  --code-bg: #0b0b18;
+  --code-text: #c0c8e8;
   --nav-bg: #000000;
-  --nav-border: #1a2a3a;
-  --card-bg: #060d14;
-  --card-border: #1a2a3a;
-  --table-stripe: #060d14;
-  --toc-bg: #060d14;
-  --shadow: 0 1px 3px rgba(137, 207, 240, 0.06);
+  --nav-border: #1e1e36;
+  --card-bg: #08081a;
+  --card-border: #1e1e36;
+  --table-stripe: #08081a;
+  --toc-bg: #08081a;
+  --shadow: 0 1px 3px rgba(126, 174, 240, 0.06);
   --heading: #ffffff;
-  --heading-muted: #c0d8ec;
+  --heading-muted: #c0c8e8;
 }
 
 /* ── Reset & Base ─────────────────────────────────────── */
@@ -83,8 +83,11 @@ nav {
 }
 
 .page-manual nav {
-  border-bottom: none;
   box-shadow: none;
+}
+
+.toc-inner {
+  border-bottom: none;
 }
 
 nav .container {
@@ -102,6 +105,12 @@ nav .brand {
     "Liberation Mono", monospace;
 }
 
+nav .brand-logo {
+  width: 2.5rem;
+  height: auto;
+  vertical-align: -0.6em;
+}
+
 nav .brand:hover {
   text-decoration: none;
   color: var(--accent);
@@ -109,11 +118,15 @@ nav .brand:hover {
 
 nav .nav-links {
   display: flex;
+  align-items: center;
   gap: 1rem;
   margin-left: auto;
 }
 
 nav .nav-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   font-size: 0.875rem;
   color: var(--text-muted);
   padding: 0.25rem 0;
@@ -123,6 +136,19 @@ nav .nav-links a:hover,
 nav .nav-links a.active {
   color: var(--accent);
   text-decoration: none;
+}
+
+nav .nav-separator {
+  width: 1px;
+  height: 1rem;
+  background: var(--border);
+}
+
+.nav-icon {
+  width: 1rem;
+  height: 1rem;
+  fill: currentColor;
+  flex-shrink: 0;
 }
 
 /* ── Hero ─────────────────────────────────────────────── */
@@ -135,6 +161,12 @@ nav .nav-links a.active {
   justify-content: center;
   padding: 3rem 0;
   margin-bottom: 2.5rem;
+}
+
+.hero-logo {
+  width: 90px;
+  height: auto;
+  margin-bottom: 1rem;
 }
 
 .hero h1 {
@@ -260,6 +292,9 @@ p {
 }
 
 .tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   background: none;
   border: 1px solid transparent;
   border-bottom: none;
@@ -271,6 +306,13 @@ p {
   cursor: pointer;
   position: relative;
   bottom: -1px;
+}
+
+.tab-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: currentColor;
+  flex-shrink: 0;
 }
 
 .tab-btn:hover {
@@ -294,6 +336,25 @@ p {
   display: block;
 }
 
+/* ── Tip Panel ────────────────────────────────────────── */
+.tip {
+  border-left: 3px solid var(--accent);
+  background: rgba(126, 174, 240, 0.05);
+  border-radius: 0 6px 6px 0;
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.tip strong {
+  color: var(--accent);
+}
+
+.tip p {
+  margin: 0;
+}
+
 /* ── Feature Cards ────────────────────────────────────── */
 .features-grid {
   display: grid;
@@ -315,7 +376,7 @@ p {
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 8px;
-  background: rgba(137, 207, 240, 0.1);
+  background: rgba(126, 174, 240, 0.1);
   margin-bottom: 0.75rem;
 }
 
