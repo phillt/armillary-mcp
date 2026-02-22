@@ -8,7 +8,7 @@ export const ParamSchema = z.object({
 
 export const SymbolDocSchema = z.object({
     id: z.string(),                 // stable id: `${filePath}#${exportName}`
-    kind: z.enum(["function", "class", "type", "const", "interface", "enum"]),
+    kind: z.enum(["function", "class", "type", "const", "interface", "enum", "component"]),
     name: z.string(),
     filePath: z.string(),
     exported: z.boolean(),
