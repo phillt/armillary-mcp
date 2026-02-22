@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/armillary-mcp-logo.svg" alt="armillary-mcp logo" width="90">
+</p>
+
 # armillary-mcp
 
 Index your TypeScript project so AI coding assistants can discover and reuse your existing code. Extracts every exported function, class, type, interface, enum, and constant — complete with signatures, JSDoc comments, and parameter details — and serves them through the Model Context Protocol (MCP) for tools like Claude Code, Cursor, and Windsurf.
@@ -17,25 +21,52 @@ AI coding assistants frequently recreate utilities that already exist in your co
 
 ## Quick Start
 
-Install as a dev dependency:
+### 1. Install
+
+```sh
+npm install --save-dev armillary-mcp
+```
+
+Or with pnpm:
 
 ```sh
 pnpm add -D armillary-mcp
 ```
 
-Generate the documentation index:
+### 2. Build the documentation index
 
 ```sh
 npx armillary-mcp build
 ```
 
-Connect your AI coding assistant. For **Claude Code**, register the server with the CLI:
+### 3. Add the prompt to your agent
+
+Add code-reuse instructions so your agent checks the documentation index before creating new code. For **Claude Code**, add to your project's `CLAUDE.md`:
+
+```markdown
+## Code Reuse
+
+Before creating new services, utilities, or helpers, use the armillary-mcp tools to check if similar functionality already exists:
+
+1. Use `docs.search` with relevant keywords to find existing implementations
+2. Use `docs.get` to review the full signature and documentation of potential matches
+3. If a suitable symbol exists, reuse or extend it instead of creating a new one
+4. If nothing suitable exists, proceed with creating a new implementation
+
+This prevents duplicate services and keeps the codebase consistent.
+```
+
+For Cursor, Windsurf, VS Code, Zed, Cline, and other agents, see the [manual](https://philllt.github.io/armillary-mcp/manual.html#quick-setup) for agent-specific prompt configuration.
+
+### 4. Add the MCP server to your agent
+
+For **Claude Code**, register the server with the CLI:
 
 ```sh
 claude mcp add --transport stdio armillary-mcp -- npx armillary-mcp-server
 ```
 
-For **Cursor**, **Windsurf**, or other MCP clients, add to your client's config file:
+For **Cursor**, **Windsurf**, and other MCP clients, add to your client's config file (see the [manual](https://philllt.github.io/armillary-mcp/manual.html#quick-setup) for agent-specific config paths):
 
 ```json
 {
@@ -47,6 +78,15 @@ For **Cursor**, **Windsurf**, or other MCP clients, add to your client's config 
   }
 }
 ```
+
+### 5. Watch for changes
+
+```sh
+npx armillary-mcp watch
+```
+
+> [!TIP]
+> Add the watch command to your dev script (e.g. alongside your dev server) so the index always stays current while you work.
 
 ## CLI Commands
 
