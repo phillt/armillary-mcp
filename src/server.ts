@@ -25,11 +25,16 @@ async function main() {
     process.exit(1);
   }
 
-  const server = new McpServer({ name: "armillary-mcp", version: "1.0.0" });
+  const server = new McpServer({
+    name: "armillary-mcp",
+    version: "1.0.0",
+    instructions:
+      "Armillary MCP indexes TypeScript projects so you can discover and reuse existing code. Before writing new functions, utilities, or types, search the index to check if a suitable implementation already exists. Use docs.list to browse all indexed symbols, docs.search to find symbols by name or description, and docs.get to retrieve full documentation including signatures, parameters, and JSDoc annotations.",
+  });
 
   server.tool(
     "docs.list",
-    "List all documented symbols (id, kind, name)",
+    "List all symbols indexed by armillary-mcp (id, kind, name). Use this to browse the full set of exported functions, classes, types, interfaces, enums, and constants.",
     {},
     { annotations: toolAnnotations },
     (_extra) => ({
@@ -41,7 +46,7 @@ async function main() {
 
   server.tool(
     "docs.get",
-    "Get full documentation for a symbol by its id",
+    "Get full documentation for an indexed symbol by its id, including signature, parameters, return type, and JSDoc annotations.",
     { id: z.string() },
     { annotations: toolAnnotations },
     ({ id }, _extra) => {
@@ -64,7 +69,7 @@ async function main() {
 
   server.tool(
     "docs.search",
-    "Search symbols by name or description substring",
+    "Search the armillary-mcp index for symbols matching a name or description substring. Returns matching functions, types, classes, and other exports.",
     { q: z.string(), limit: z.number().optional() },
     { annotations: toolAnnotations },
     ({ q, limit }, _extra) => ({
