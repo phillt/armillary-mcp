@@ -8,7 +8,7 @@ function timestamp(): string {
 }
 
 function showUsage(): void {
-  console.log(`Usage: mcp-docs <command>
+  console.log(`Usage: armillary-mcp <command>
 
 Commands:
   build   Generate documentation index and exit
@@ -29,7 +29,7 @@ async function runBuild(): Promise<void> {
   for (const sym of index.symbols) {
     console.log(`  ${sym.kind.padEnd(10)} ${sym.id}`);
   }
-  console.log(`\nOutput written to .mcp-docs/index.json`);
+  console.log(`\nOutput written to .armillary-mcp-docs/index.json`);
 }
 
 async function runWatch(): Promise<void> {

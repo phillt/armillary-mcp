@@ -1,4 +1,4 @@
-# project-mcp-docs
+# armillary-mcp
 
 Index your TypeScript project so AI coding assistants can discover and reuse your existing code. Extracts every exported function, class, type, interface, enum, and constant — complete with signatures, JSDoc comments, and parameter details — and serves them through the Model Context Protocol (MCP) for tools like Claude Code, Cursor, and Windsurf.
 
@@ -20,19 +20,19 @@ AI coding assistants frequently recreate utilities that already exist in your co
 Install as a dev dependency:
 
 ```sh
-pnpm add -D project-mcp-docs
+pnpm add -D armillary-mcp
 ```
 
 Generate the documentation index:
 
 ```sh
-npx mcp-docs build
+npx armillary-mcp build
 ```
 
 Start the MCP server:
 
 ```sh
-npx mcp-docs-server
+npx armillary-mcp-server
 ```
 
 Connect your AI coding assistant. For Claude Code (`.claude/settings.json`), Cursor, or any MCP client:
@@ -40,9 +40,9 @@ Connect your AI coding assistant. For Claude Code (`.claude/settings.json`), Cur
 ```json
 {
   "mcpServers": {
-    "project-docs": {
+    "armillary": {
       "command": "npx",
-      "args": ["mcp-docs-server"],
+      "args": ["armillary-mcp-server"],
       "cwd": "/path/to/your/project"
     }
   }
@@ -51,13 +51,13 @@ Connect your AI coding assistant. For Claude Code (`.claude/settings.json`), Cur
 
 ## CLI Commands
 
-### `mcp-docs build`
+### `armillary-mcp build`
 
-Reads `tsconfig.json` from the current working directory, extracts all exported symbols, and writes a documentation index to `.mcp-docs/index.json`. Prints a summary of extracted symbols to stdout.
+Reads `tsconfig.json` from the current working directory, extracts all exported symbols, and writes a documentation index to `.armillary-mcp-docs/index.json`. Prints a summary of extracted symbols to stdout.
 
-### `mcp-docs watch`
+### `armillary-mcp watch`
 
-Watches for `.ts` and `.tsx` file changes and regenerates the index automatically. Uses 300ms debounce. Ignores `node_modules`, `dist`, `.d.ts` files, and the `.mcp-docs` output directory.
+Watches for `.ts` and `.tsx` file changes and regenerates the index automatically. Uses 300ms debounce. Ignores `node_modules`, `dist`, `.d.ts` files, and the `.armillary-mcp-docs` output directory.
 
 ## MCP Tools
 
@@ -79,7 +79,7 @@ import {
   listSymbols,
   getSymbol,
   searchSymbols,
-} from "project-mcp-docs";
+} from "armillary-mcp";
 
 // Generate documentation
 const index = await generateDocIndex({
@@ -94,14 +94,14 @@ const result = getSymbol(loaded, "src/foo.ts#bar");
 const matches = searchSymbols(loaded, "generate", 5);
 ```
 
-See the [full manual](https://philllt.github.io/project-mcp-docs/manual.html) for complete API documentation including `watchAndRegenerate`, `createBuildController`, Zod schemas, and the schema reference.
+See the [full manual](https://philllt.github.io/armillary-mcp/manual.html) for complete API documentation including `watchAndRegenerate`, `createBuildController`, Zod schemas, and the schema reference.
 
 ## Documentation
 
-Full documentation is available at: https://philllt.github.io/project-mcp-docs/
+Full documentation is available at: https://philllt.github.io/armillary-mcp/
 
-- [Home](https://philllt.github.io/project-mcp-docs/) — overview and quick start
-- [Manual](https://philllt.github.io/project-mcp-docs/manual.html) — CLI, MCP server, API, and schema reference
+- [Home](https://philllt.github.io/armillary-mcp/) — overview and quick start
+- [Manual](https://philllt.github.io/armillary-mcp/manual.html) — CLI, MCP server, API, and schema reference
 
 ## Development
 
@@ -113,8 +113,8 @@ Full documentation is available at: https://philllt.github.io/project-mcp-docs/
 ### Setup
 
 ```sh
-git clone https://github.com/philllt/project-mcp-docs.git
-cd project-mcp-docs
+git clone https://github.com/philllt/armillary-mcp.git
+cd armillary-mcp
 pnpm install
 ```
 

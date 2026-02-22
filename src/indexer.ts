@@ -31,7 +31,7 @@ export async function generateDocIndex(
 ): Promise<DocIndex> {
   const { tsConfigFilePath, projectRoot } = options;
   const outputPath =
-    options.outputPath ?? path.join(projectRoot, ".mcp-docs", "index.json");
+    options.outputPath ?? path.join(projectRoot, ".armillary-mcp-docs", "index.json");
 
   const project = new Project({ tsConfigFilePath });
   const sourceFiles = project.getSourceFiles();

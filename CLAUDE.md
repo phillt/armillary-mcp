@@ -4,4 +4,4 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a project related to MCP (Model Context Protocol) documentation. The repository is in its early stages.
+Armillary MCP — indexes TypeScript projects so AI coding assistants can discover and reuse existing code via the Model Context Protocol.

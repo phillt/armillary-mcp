@@ -1,12 +1,12 @@
 {
-  "name": "project-mcp-docs",
+  "name": "armillary-mcp",
   "version": "1.0.0",
   "description": "",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "mcp-docs": "dist/cli.js",
-    "mcp-docs-server": "dist/server.js"
+    "armillary-mcp": "dist/cli.js",
+    "armillary-mcp-server": "dist/server.js"
   },
   "scripts": {
     "build": "tsup",

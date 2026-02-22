@@ -7,7 +7,7 @@ import { generateDocIndex } from "../indexer.js";
 let tmpDir: string;
 
 beforeEach(async () => {
-  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "mcp-docs-test-"));
+  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "armillary-mcp-test-"));
 
   // Write a tsconfig.json
   await fs.writeFile(
@@ -88,7 +88,7 @@ export type NumberPair = [number, number];
     expect(numberPair?.kind).toBe("type");
   });
 
-  it("writes output to .mcp-docs/index.json by default", async () => {
+  it("writes output to .armillary-mcp-docs/index.json by default", async () => {
     await fs.writeFile(
       path.join(tmpDir, "src", "simple.ts"),
       `export const VALUE = 42;`
@@ -99,7 +99,7 @@ export type NumberPair = [number, number];
       projectRoot: tmpDir,
     });
 
-    const outputPath = path.join(tmpDir, ".mcp-docs", "index.json");
+    const outputPath = path.join(tmpDir, ".armillary-mcp-docs", "index.json");
     const content = await fs.readFile(outputPath, "utf-8");
     const parsed = JSON.parse(content);
     expect(parsed.version).toBe("1.0.0");

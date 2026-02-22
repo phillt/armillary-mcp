@@ -3,19 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Manual — project-mcp-docs</title>
-  <meta name="description" content="Complete reference for project-mcp-docs: help AI coding assistants discover and reuse your existing TypeScript code via MCP.">
+  <title>Manual — armillary-mcp</title>
+  <meta name="description" content="Complete reference for armillary-mcp: help AI coding assistants discover and reuse your existing TypeScript code via MCP.">
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="page-manual">
 
 <nav>
   <div class="container">
-    <a href="index.html" class="brand">project-mcp-docs</a>
+    <a href="index.html" class="brand">armillary-mcp</a>
     <div class="nav-links">
       <a href="index.html">Home</a>
       <a href="manual.html" class="active">Manual</a>
-      <a href="https://github.com/philllt/project-mcp-docs">GitHub</a>
+      <a href="https://github.com/philllt/armillary-mcp">GitHub</a>
     </div>
   </div>
 </nav>
@@ -55,7 +55,7 @@
       and writes a new one from scratch.
     </p>
     <p>
-      <strong>project-mcp-docs</strong> solves this by creating a searchable index of every exported
+      <strong>armillary-mcp</strong> solves this by creating a searchable index of every exported
       symbol in your TypeScript project — functions, classes, types, interfaces, enums, and constants —
       complete with signatures and JSDoc descriptions.
     </p>
@@ -75,16 +75,16 @@
     </p>
 
     <h3>1. Install</h3>
-    <pre><code>pnpm add -D project-mcp-docs</code></pre>
+    <pre><code>pnpm add -D armillary-mcp</code></pre>
     <p>Or with npm:</p>
-    <pre><code>npm install --save-dev project-mcp-docs</code></pre>
-    <p>You can also install globally with <code>pnpm add -g project-mcp-docs</code> or <code>npm install -g project-mcp-docs</code>.</p>
+    <pre><code>npm install --save-dev armillary-mcp</code></pre>
+    <p>You can also install globally with <code>pnpm add -g armillary-mcp</code> or <code>npm install -g armillary-mcp</code>.</p>
 
     <h3>2. Build the index</h3>
-    <pre><code>npx mcp-docs build</code></pre>
+    <pre><code>npx armillary-mcp build</code></pre>
     <p>
       This reads your <code>tsconfig.json</code>, extracts all exported symbols, and writes a
-      documentation index to <code>.mcp-docs/index.json</code>.
+      documentation index to <code>.armillary-mcp-docs/index.json</code>.
     </p>
 
     <h3>3. Connect your agent</h3>
@@ -109,9 +109,9 @@
         <p>Add a <code>.mcp.json</code> file to your project root:</p>
         <pre><code>{
   "mcpServers": {
-    "project-docs": {
+    "armillary": {
       "command": "npx",
-      "args": ["mcp-docs-server"]
+      "args": ["armillary-mcp-server"]
     }
   }
 }</code></pre>
@@ -122,9 +122,9 @@
         <p>Add to <code>.cursor/mcp.json</code> in your project root:</p>
         <pre><code>{
   "mcpServers": {
-    "project-docs": {
+    "armillary": {
       "command": "npx",
-      "args": ["mcp-docs-server"]
+      "args": ["armillary-mcp-server"]
     }
   }
 }</code></pre>
@@ -135,9 +135,9 @@
         <p>Add to <code>~/.codeium/windsurf/mcp_config.json</code> (Windsurf only supports global config):</p>
         <pre><code>{
   "mcpServers": {
-    "project-docs": {
+    "armillary": {
       "command": "npx",
-      "args": ["mcp-docs-server"]
+      "args": ["armillary-mcp-server"]
     }
   }
 }</code></pre>
@@ -147,10 +147,10 @@
         <p>Add to <code>.vscode/mcp.json</code> in your project root. Note: VS Code uses <code>servers</code> (not <code>mcpServers</code>) and requires an explicit <code>type</code> field:</p>
         <pre><code>{
   "servers": {
-    "project-docs": {
+    "armillary": {
       "type": "stdio",
       "command": "npx",
-      "args": ["mcp-docs-server"]
+      "args": ["armillary-mcp-server"]
     }
   }
 }</code></pre>
@@ -160,9 +160,9 @@
         <p>Add to <code>.zed/settings.json</code> in your project root. Note: Zed uses <code>context_servers</code> (not <code>mcpServers</code>):</p>
         <pre><code>{
   "context_servers": {
-    "project-docs": {
+    "armillary": {
       "command": "npx",
-      "args": ["mcp-docs-server"]
+      "args": ["armillary-mcp-server"]
     }
   }
 }</code></pre>
@@ -176,9 +176,9 @@
         </ul>
         <pre><code>{
   "mcpServers": {
-    "project-docs": {
+    "armillary": {
       "command": "npx",
-      "args": ["mcp-docs-server"]
+      "args": ["armillary-mcp-server"]
     }
   }
 }</code></pre>
@@ -192,9 +192,9 @@
         </ul>
         <pre><code>{
   "mcpServers": {
-    "project-docs": {
+    "armillary": {
       "command": "npx",
-      "args": ["mcp-docs-server"],
+      "args": ["armillary-mcp-server"],
       "cwd": "/path/to/your/project"
     }
   }
@@ -215,7 +215,7 @@
     <p>
       During active development, run the watcher so your index stays up to date as you edit code:
     </p>
-    <pre><code>npx mcp-docs watch</code></pre>
+    <pre><code>npx armillary-mcp watch</code></pre>
   </section>
 
   <!-- Agent Prompt Configuration -->
@@ -330,19 +330,19 @@ Before creating new services, utilities, or helpers, use the project documentati
   <section id="cli">
     <h2>CLI Usage</h2>
 
-    <p>The <code>mcp-docs</code> binary provides two commands:</p>
+    <p>The <code>armillary-mcp</code> binary provides two commands:</p>
 
-    <h3><code>mcp-docs build</code></h3>
+    <h3><code>armillary-mcp build</code></h3>
     <p>
       Reads <code>tsconfig.json</code> from the current working directory, extracts all exported
       symbols from your TypeScript source files, and writes a documentation index to
-      <code>.mcp-docs/index.json</code>. A summary of extracted symbols is printed to stdout.
+      <code>.armillary-mcp-docs/index.json</code>. A summary of extracted symbols is printed to stdout.
     </p>
-    <pre><code>$ npx mcp-docs build
+    <pre><code>$ npx armillary-mcp build
 Documentation generated: 42 symbols
   function: 18, class: 4, type: 8, interface: 6, const: 4, enum: 2</code></pre>
 
-    <h3><code>mcp-docs watch</code></h3>
+    <h3><code>armillary-mcp watch</code></h3>
     <p>
       Starts a file system watcher that monitors your project for <code>.ts</code> and
       <code>.tsx</code> file changes. When a change is detected, the documentation index
@@ -353,17 +353,17 @@ Documentation generated: 42 symbols
       <li><code>node_modules</code></li>
       <li><code>dist</code></li>
       <li><code>.d.ts</code> files</li>
-      <li><code>.mcp-docs</code> output directory</li>
+      <li><code>.armillary-mcp-docs</code> output directory</li>
     </ul>
-    <pre><code>$ npx mcp-docs watch
+    <pre><code>$ npx armillary-mcp watch
 Watching for changes...
 [rebuild] 42 symbols
 [rebuild] 43 symbols</code></pre>
     <p>Press <kbd>Ctrl+C</kbd> to stop. The watcher handles <code>SIGINT</code> and <code>SIGTERM</code> for graceful shutdown.</p>
 
-    <h3><code>mcp-docs</code> (no arguments)</h3>
+    <h3><code>armillary-mcp</code> (no arguments)</h3>
     <p>Prints usage help:</p>
-    <pre><code>Usage: mcp-docs &lt;command&gt;
+    <pre><code>Usage: armillary-mcp &lt;command&gt;
 
 Commands:
   build   Generate documentation index and exit
@@ -382,11 +382,11 @@ Commands:
     </p>
 
     <h3>Starting the server</h3>
-    <pre><code>npx mcp-docs-server</code></pre>
+    <pre><code>npx armillary-mcp-server</code></pre>
     <p>
       The server communicates over <strong>stdio</strong> using the Model Context Protocol.
-      It reads the documentation index from <code>.mcp-docs/index.json</code>, so you must
-      run <code>mcp-docs build</code> (or <code>mcp-docs watch</code>) first.
+      It reads the documentation index from <code>.armillary-mcp-docs/index.json</code>, so you must
+      run <code>armillary-mcp build</code> (or <code>armillary-mcp watch</code>) first.
     </p>
 
     <h3>Tool: <code>docs.list</code></h3>
@@ -464,16 +464,16 @@ Commands:
   searchSymbols,
   DocIndexSchema,
   SymbolDocSchema,
-} from "project-mcp-docs";</code></pre>
+} from "armillary-mcp";</code></pre>
 
     <h3><code>generateDocIndex(options)</code></h3>
     <p>Generate a documentation index from a TypeScript project and write it to disk.</p>
-    <pre><code>import { generateDocIndex } from "project-mcp-docs";
+    <pre><code>import { generateDocIndex } from "armillary-mcp";
 
 const index = await generateDocIndex({
   tsConfigFilePath: "./tsconfig.json",
   projectRoot: process.cwd(),
-  outputPath: ".mcp-docs/index.json", // optional, this is the default
+  outputPath: ".armillary-mcp-docs/index.json", // optional, this is the default
 });</code></pre>
 
     <p><strong><code>IndexerOptions</code></strong></p>
@@ -482,14 +482,14 @@ const index = await generateDocIndex({
       <tbody>
         <tr><td><code>tsConfigFilePath</code></td><td>string</td><td>Yes</td><td>Path to tsconfig.json</td></tr>
         <tr><td><code>projectRoot</code></td><td>string</td><td>Yes</td><td>Project root directory</td></tr>
-        <tr><td><code>outputPath</code></td><td>string</td><td>No</td><td>Output path (default: <code>.mcp-docs/index.json</code>)</td></tr>
+        <tr><td><code>outputPath</code></td><td>string</td><td>No</td><td>Output path (default: <code>.armillary-mcp-docs/index.json</code>)</td></tr>
       </tbody>
     </table>
     <p>Returns: <code>Promise&lt;DocIndex&gt;</code></p>
 
     <h3><code>watchAndRegenerate(options)</code></h3>
     <p>Watch for file changes and regenerate the documentation index automatically.</p>
-    <pre><code>import { watchAndRegenerate } from "project-mcp-docs";
+    <pre><code>import { watchAndRegenerate } from "armillary-mcp";
 
 const handle = await watchAndRegenerate({
   tsConfigFilePath: "./tsconfig.json",
@@ -528,7 +528,7 @@ await handle.close();</code></pre>
 
     <h3><code>createBuildController(buildFn, debounceMs)</code></h3>
     <p>Create a debounced build controller that queues rebuilds and prevents overlapping builds.</p>
-    <pre><code>import { createBuildController } from "project-mcp-docs";
+    <pre><code>import { createBuildController } from "armillary-mcp";
 
 const controller = createBuildController(async () =&gt; {
   // your build logic
@@ -549,14 +549,14 @@ await controller.waitForIdle();</code></pre>
 
     <h3><code>loadDocIndex(projectRoot)</code></h3>
     <p>Load and validate the documentation index from disk.</p>
-    <pre><code>import { loadDocIndex } from "project-mcp-docs";
+    <pre><code>import { loadDocIndex } from "armillary-mcp";
 
 const index = await loadDocIndex(process.cwd());</code></pre>
-    <p>Reads <code>.mcp-docs/index.json</code> relative to the given project root. Throws if the file is missing or fails Zod validation.</p>
+    <p>Reads <code>.armillary-mcp-docs/index.json</code> relative to the given project root. Throws if the file is missing or fails Zod validation.</p>
 
     <h3><code>listSymbols(index)</code></h3>
     <p>Return a summary array of all symbols in an index.</p>
-    <pre><code>import { loadDocIndex, listSymbols } from "project-mcp-docs";
+    <pre><code>import { loadDocIndex, listSymbols } from "armillary-mcp";
 
 const index = await loadDocIndex(process.cwd());
 const symbols = listSymbols(index);
@@ -579,7 +579,7 @@ if (sym) {
 
     <h3>Zod Schemas</h3>
     <p>Validation schemas are exported for use in your own code:</p>
-    <pre><code>import { DocIndexSchema, SymbolDocSchema } from "project-mcp-docs";
+    <pre><code>import { DocIndexSchema, SymbolDocSchema } from "armillary-mcp";
 
 const parsed = DocIndexSchema.parse(rawJson);</code></pre>
   </section>
@@ -637,7 +637,7 @@ const parsed = DocIndexSchema.parse(rawJson);</code></pre>
 
     <h3>Output path</h3>
     <p>
-      By default, the documentation index is written to <code>.mcp-docs/index.json</code>
+      By default, the documentation index is written to <code>.armillary-mcp-docs/index.json</code>
       relative to the project root. You can override this with the <code>outputPath</code>
       option in the programmatic API.
     </p>
@@ -651,14 +651,14 @@ const parsed = DocIndexSchema.parse(rawJson);</code></pre>
       <li><code>node_modules/</code></li>
       <li><code>dist/</code></li>
       <li><code>*.d.ts</code> files</li>
-      <li><code>.mcp-docs/</code> output directory</li>
+      <li><code>.armillary-mcp-docs/</code> output directory</li>
     </ul>
   </section>
 
   <!-- Output Format -->
   <section id="output-format">
     <h2>Output Format</h2>
-    <p>The generated index is a single JSON file at <code>.mcp-docs/index.json</code>:</p>
+    <p>The generated index is a single JSON file at <code>.armillary-mcp-docs/index.json</code>:</p>
     <pre><code>{
   "version": "1.0.0",
   "generatedAt": "2026-02-21T12:00:00.000Z",
@@ -692,7 +692,7 @@ const parsed = DocIndexSchema.parse(rawJson);</code></pre>
 
 <footer>
   <div class="container">
-    project-mcp-docs · ISC License
+    armillary-mcp · ISC License
   </div>
 </footer>
 

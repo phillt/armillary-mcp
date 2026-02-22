@@ -99,7 +99,7 @@ const IGNORED_PATTERNS = [
   /\.next/,
   /dist\//,
   /\.d\.ts$/,
-  /\.mcp-docs/,
+  /\.armillary-mcp-docs/,
 ];
 
 function shouldIgnore(filePath: string): boolean {

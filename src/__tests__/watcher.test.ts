@@ -155,7 +155,7 @@ describe("watchAndRegenerate", () => {
   let tmpDir: string;
 
   beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "mcp-docs-watch-"));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "armillary-mcp-watch-"));
 
     await fs.writeFile(
       path.join(tmpDir, "tsconfig.json"),
@@ -199,7 +199,7 @@ describe("watchAndRegenerate", () => {
       expect(onBuildComplete).toHaveBeenCalledTimes(1);
       expect(onBuildComplete).toHaveBeenCalledWith(1); // one symbol: hello
 
-      const indexPath = path.join(tmpDir, ".mcp-docs", "index.json");
+      const indexPath = path.join(tmpDir, ".armillary-mcp-docs", "index.json");
       const content = JSON.parse(await fs.readFile(indexPath, "utf-8"));
       expect(content.symbols).toHaveLength(1);
       expect(content.symbols[0].name).toBe("hello");
@@ -237,7 +237,7 @@ describe("watchAndRegenerate", () => {
         { timeout: 10_000, interval: 100 }
       );
 
-      const indexPath = path.join(tmpDir, ".mcp-docs", "index.json");
+      const indexPath = path.join(tmpDir, ".armillary-mcp-docs", "index.json");
       const content = JSON.parse(await fs.readFile(indexPath, "utf-8"));
       expect(content.symbols.length).toBeGreaterThanOrEqual(2);
     } finally {

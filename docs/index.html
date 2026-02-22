@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>project-mcp-docs — Help AI Agents Discover and Reuse Your TypeScript Code</title>
+  <title>armillary-mcp — Help AI Agents Discover and Reuse Your TypeScript Code</title>
   <meta name="description" content="Index your TypeScript project so AI coding assistants like Claude Code and Cursor can discover and reuse existing functions, types, and classes via MCP.">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -89,11 +89,11 @@
 
 <nav>
   <div class="container">
-    <a href="index.html" class="brand">project-mcp-docs</a>
+    <a href="index.html" class="brand">armillary-mcp</a>
     <div class="nav-links">
       <a href="index.html" class="active">Home</a>
       <a href="manual.html">Manual</a>
-      <a href="https://github.com/philllt/project-mcp-docs">GitHub</a>
+      <a href="https://github.com/philllt/armillary-mcp">GitHub</a>
     </div>
   </div>
 </nav>
@@ -102,7 +102,7 @@
 
   <!-- Hero -->
   <div class="hero">
-    <h1>project-mcp-docs</h1>
+    <h1>armillary-mcp</h1>
     <p class="tagline">Help AI agents discover and reuse your existing TypeScript code</p>
     <p class="description">
       AI coding assistants frequently duplicate utilities that already exist in your codebase
@@ -159,24 +159,24 @@
     <ol class="steps">
       <li>
         <strong>Install</strong>
-        <pre><code>pnpm add -D project-mcp-docs</code></pre>
+        <pre><code>pnpm add -D armillary-mcp</code></pre>
       </li>
       <li>
         <strong>Generate documentation index</strong>
-        <pre><code>npx mcp-docs build</code></pre>
+        <pre><code>npx armillary-mcp build</code></pre>
       </li>
       <li>
         <strong>Start the MCP server</strong>
-        <pre><code>npx mcp-docs-server</code></pre>
+        <pre><code>npx armillary-mcp-server</code></pre>
       </li>
       <li>
         <strong>Connect your AI coding assistant</strong>
         <p>Add to your MCP client config. For <strong>Claude Code</strong> (<code>.claude/settings.json</code>):</p>
         <pre><code>{
   "mcpServers": {
-    "project-docs": {
+    "armillary": {
       "command": "npx",
-      "args": ["mcp-docs-server"],
+      "args": ["armillary-mcp-server"],
       "cwd": "/path/to/your/project"
     }
   }
@@ -200,7 +200,7 @@
       </li>
       <li>
         <strong>Outputs validated JSON</strong>
-        <p>Symbols are sorted deterministically and validated against a Zod schema. The result is written to <code>.mcp-docs/index.json</code>, ready for the MCP server to serve.</p>
+        <p>Symbols are sorted deterministically and validated against a Zod schema. The result is written to <code>.armillary-mcp-docs/index.json</code>, ready for the MCP server to serve.</p>
       </li>
       <li>
         <strong>Your AI agent queries the index</strong>
@@ -213,7 +213,7 @@
 
 <footer>
   <div class="container">
-    project-mcp-docs · ISC License
+    armillary-mcp · ISC License
   </div>
 </footer>
 

@@ -21,11 +21,11 @@ async function main() {
     index = await loadDocIndex(process.cwd());
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    process.stderr.write(`mcp-docs-server: ${message}\n`);
+    process.stderr.write(`armillary-mcp-server: ${message}\n`);
     process.exit(1);
   }
 
-  const server = new McpServer({ name: "mcp-docs", version: "1.0.0" });
+  const server = new McpServer({ name: "armillary-mcp", version: "1.0.0" });
 
   server.tool(
     "docs.list",

@@ -3,7 +3,7 @@ import path from "node:path";
 import { DocIndexSchema, type DocIndex, type SymbolDoc } from "./schema.js";
 
 export async function loadDocIndex(projectRoot: string): Promise<DocIndex> {
-  const indexPath = path.join(projectRoot, ".mcp-docs", "index.json");
+  const indexPath = path.join(projectRoot, ".armillary-mcp-docs", "index.json");
 
   let raw: string;
   try {
@@ -11,7 +11,7 @@ export async function loadDocIndex(projectRoot: string): Promise<DocIndex> {
   } catch (err: unknown) {
     if (err instanceof Error && "code" in err && err.code === "ENOENT") {
       throw new Error(
-        `Index file not found at ${indexPath}. Run \`mcp-docs build\` first.`
+        `Index file not found at ${indexPath}. Run \`armillary-mcp build\` first.`
       );
     }
     throw err;

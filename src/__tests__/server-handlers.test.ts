@@ -40,7 +40,7 @@ describe("loadDocIndex", () => {
   let tmpDir: string;
 
   beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "mcp-docs-server-test-"));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "armillary-mcp-server-test-"));
   });
 
   afterEach(async () => {
@@ -48,7 +48,7 @@ describe("loadDocIndex", () => {
   });
 
   it("loads a valid index file", async () => {
-    const indexDir = path.join(tmpDir, ".mcp-docs");
+    const indexDir = path.join(tmpDir, ".armillary-mcp-docs");
     await fs.mkdir(indexDir, { recursive: true });
     await fs.writeFile(
       path.join(indexDir, "index.json"),
@@ -63,12 +63,12 @@ describe("loadDocIndex", () => {
 
   it("throws with helpful message when file is missing", async () => {
     await expect(loadDocIndex(tmpDir)).rejects.toThrow(
-      "Run `mcp-docs build` first"
+      "Run `armillary-mcp build` first"
     );
   });
 
   it("throws on invalid JSON", async () => {
-    const indexDir = path.join(tmpDir, ".mcp-docs");
+    const indexDir = path.join(tmpDir, ".armillary-mcp-docs");
     await fs.mkdir(indexDir, { recursive: true });
     await fs.writeFile(path.join(indexDir, "index.json"), "not json{{{");
 
@@ -76,7 +76,7 @@ describe("loadDocIndex", () => {
   });
 
   it("throws on schema mismatch", async () => {
-    const indexDir = path.join(tmpDir, ".mcp-docs");
+    const indexDir = path.join(tmpDir, ".armillary-mcp-docs");
     await fs.mkdir(indexDir, { recursive: true });
     await fs.writeFile(
       path.join(indexDir, "index.json"),
