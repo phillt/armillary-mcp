@@ -77,19 +77,129 @@
     </p>
 
     <h3>1. Install</h3>
-    <pre><code>pnpm add -D armillary-mcp</code></pre>
-    <p>Or with npm:</p>
-    <pre><code>npm install --save-dev armillary-mcp</code></pre>
-    <p>You can also install globally with <code>pnpm add -g armillary-mcp</code> or <code>npm install -g armillary-mcp</code>.</p>
+    <div class="tabs">
+      <div class="tab-buttons" role="tablist">
+        <button class="tab-btn active" data-tab="install-npm" role="tab" aria-selected="true"><svg class="tab-icon" viewBox="0 0 24 24"><path d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323l13.837.019-.009 13.836h-3.464l.01-10.382h-3.456L12.04 19.17H5.113z"/></svg> npm</button>
+        <button class="tab-btn" data-tab="install-pnpm" role="tab" aria-selected="false"><svg class="tab-icon" viewBox="0 0 24 24"><path d="M0 0v7.5h7.5V0zm8.25 0v7.5h7.498V0zm8.25 0v7.5H24V0zM2 2h3.5v3.5H2zm8.25 0h3.498v3.5H10.25zm8.25 0H22v3.5h-3.5zM8.25 8.25v7.5h7.498v-7.5zm8.25 0v7.5H24v-7.5zm2 2H22v3.5h-3.5zM0 16.5V24h7.5v-7.5zm8.25 0V24h7.498v-7.5zm8.25 0V24H24v-7.5z"/></svg> pnpm</button>
+      </div>
+      <div class="tab-panel active" id="tab-install-npm" role="tabpanel">
+        <pre><code>npm install --save-dev armillary-mcp</code></pre>
+      </div>
+      <div class="tab-panel" id="tab-install-pnpm" role="tabpanel">
+        <pre><code>pnpm add -D armillary-mcp</code></pre>
+      </div>
+    </div>
+    <p>You can also install globally with <code>npm install -g armillary-mcp</code> or <code>pnpm add -g armillary-mcp</code>.</p>
 
     <h3>2. Build the index</h3>
     <pre><code>npx armillary-mcp build</code></pre>
     <p>
-      This reads your <code>tsconfig.json</code>, extracts all exported symbols, and writes a
-      documentation index to <code>.armillary-mcp-docs/index.json</code>.
+      This extracts all exported symbols and writes a documentation index to <code>.armillary-mcp-docs/index.json</code>.
     </p>
 
-    <h3>3. Connect your agent</h3>
+    <h3>3. Add the prompt to your agent</h3>
+    <p>
+      Add code-reuse instructions so your agent checks the documentation index before creating new code.
+    </p>
+
+    <div class="tabs">
+      <div class="tab-buttons" role="tablist">
+        <button class="tab-btn active" data-tab="prompt-claude-code" role="tab" aria-selected="true"><svg class="tab-icon" viewBox="0 0 24 24"><path d="M17.3041 3.541h-3.6718l6.696 16.918H24Zm-10.6082 0L0 20.459h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442L10.5363 3.5409Zm-.3712 10.2232 2.2914-5.9456 2.2914 5.9456Z"/></svg> Claude Code</button>
+        <button class="tab-btn" data-tab="prompt-cursor" role="tab" aria-selected="false"><svg class="tab-icon" viewBox="0 0 24 24"><path d="M11.503.131 1.891 5.678a.84.84 0 0 0-.42.726v11.188c0 .3.162.575.42.724l9.609 5.55a1 1 0 0 0 .998 0l9.61-5.55a.84.84 0 0 0 .42-.724V6.404a.84.84 0 0 0-.42-.726L12.497.131a1.01 1.01 0 0 0-.996 0M2.657 6.338h18.55c.263 0 .43.287.297.515L12.23 22.918c-.062.107-.229.064-.229-.06V12.335a.59.59 0 0 0-.295-.51l-9.11-5.257c-.109-.063-.064-.23.061-.23"/></svg> Cursor</button>
+        <button class="tab-btn" data-tab="prompt-windsurf" role="tab" aria-selected="false"><svg class="tab-icon" viewBox="0 0 24 24"><path d="M23.55 5.067c-1.2038-.002-2.1806.973-2.1806 2.1765v4.8676c0 .972-.8035 1.7594-1.7597 1.7594-.568 0-1.1352-.286-1.4718-.7659l-4.9713-7.1003c-.4125-.5896-1.0837-.941-1.8103-.941-1.1334 0-2.1533.9635-2.1533 2.153v4.8957c0 .972-.7969 1.7594-1.7596 1.7594-.57 0-1.1363-.286-1.4728-.7658L.4076 5.1598C.2822 4.9798 0 5.0688 0 5.2882v4.2452c0 .2147.0656.4228.1884.599l5.4748 7.8183c.3234.462.8006.8052 1.3509.9298 1.3771.313 2.6446-.747 2.6446-2.0977v-4.893c0-.972.7875-1.7593 1.7596-1.7593h.003a1.798 1.798 0 0 1 1.4718.7658l4.9723 7.0994c.4135.5905 1.05.941 1.8093.941 1.1587 0 2.1515-.9645 2.1515-2.153v-4.8948c0-.972.7875-1.7594 1.7596-1.7594h.194a.22.22 0 0 0 .2204-.2202v-4.622a.22.22 0 0 0-.2203-.2203Z"/></svg> Windsurf</button>
+        <button class="tab-btn" data-tab="prompt-vscode" role="tab" aria-selected="false"><svg class="tab-icon" viewBox="0 0 24 24"><path d="M17.583 2.894 9.23 9.621 4.657 6.073l-1.324.663v10.528l1.324.663 4.573-3.548 8.353 6.727 3.084-1.529V4.423ZM6.666 14.471V9.53l3.12 2.47Zm10.917 1.657-5.562-4.128 5.562-4.128Z"/></svg> VS Code</button>
+        <button class="tab-btn" data-tab="prompt-zed" role="tab" aria-selected="false"><svg class="tab-icon" viewBox="0 0 24 24"><path d="M2.25 1.5a.75.75 0 0 0-.75.75v16.5H0V2.25A2.25 2.25 0 0 1 2.25 0h20.095c1.002 0 1.504 1.212.795 1.92L10.764 14.298h3.486V12.75h1.5v1.922a1.125 1.125 0 0 1-1.125 1.125H9.264l-2.578 2.578h11.689V9h1.5v9.375a1.5 1.5 0 0 1-1.5 1.5H5.185L2.562 22.5H21.75a.75.75 0 0 0 .75-.75V5.25H24v16.5A2.25 2.25 0 0 1 21.75 24H1.655C.653 24 .151 22.788.86 22.08L13.19 9.75H9.75v1.5h-1.5V9.375A1.125 1.125 0 0 1 9.375 8.25h5.314l2.625-2.625H5.625V15h-1.5V5.625a1.5 1.5 0 0 1 1.5-1.5h13.19L21.438 1.5z"/></svg> Zed</button>
+        <button class="tab-btn" data-tab="prompt-cline" role="tab" aria-selected="false"><svg class="tab-icon" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="19" x2="20" y2="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Cline</button>
+        <button class="tab-btn" data-tab="prompt-other" role="tab" aria-selected="false"><svg class="tab-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Other</button>
+      </div>
+
+      <div class="tab-panel active" id="tab-prompt-claude-code" role="tabpanel">
+        <p>Add the following to your project's <code>CLAUDE.md</code> (or <code>.claude/CLAUDE.md</code>):</p>
+        <pre><code>## Code Reuse
+
+Before creating new services, utilities, or helpers, use the armillary-mcp tools to check if similar functionality already exists:
+
+1. Use `docs.search` with relevant keywords to find existing implementations
+2. Use `docs.get` to review the full signature and documentation of potential matches
+3. If a suitable symbol exists, reuse or extend it instead of creating a new one
+4. If nothing suitable exists, proceed with creating a new implementation
+
+This prevents duplicate services and keeps the codebase consistent.</code></pre>
+      </div>
+
+      <div class="tab-panel" id="tab-prompt-cursor" role="tabpanel">
+        <p>Create a rule file at <code>.cursor/rules/code-reuse.mdc</code>:</p>
+        <pre><code>---
+description: Check project documentation before creating new code
+globs:
+  - "src/**/*.ts"
+  - "src/**/*.tsx"
+---
+
+Before creating new services, utilities, or helpers, use the armillary-mcp tools to check if similar functionality already exists:
+
+1. Use `docs.search` with relevant keywords to find existing implementations
+2. Use `docs.get` to review the full signature and documentation of potential matches
+3. If a suitable symbol exists, reuse or extend it instead of creating a new one
+4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
+      </div>
+
+      <div class="tab-panel" id="tab-prompt-windsurf" role="tabpanel">
+        <p>Create a rule file at <code>.windsurf/rules/code-reuse.md</code>:</p>
+        <pre><code>Before creating new services, utilities, or helpers, use the armillary-mcp tools to check if similar functionality already exists:
+
+1. Use `docs.search` with relevant keywords to find existing implementations
+2. Use `docs.get` to review the full signature and documentation of potential matches
+3. If a suitable symbol exists, reuse or extend it instead of creating a new one
+4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
+        <p>Note: Windsurf rules have a 6,000 character limit per file.</p>
+      </div>
+
+      <div class="tab-panel" id="tab-prompt-vscode" role="tabpanel">
+        <p>Add to your project's <code>.github/copilot-instructions.md</code> (create the file if it doesn't exist):</p>
+        <pre><code>## Code Reuse
+
+Before creating new services, utilities, or helpers, use the armillary-mcp tools to check if similar functionality already exists:
+
+1. Use `docs.search` with relevant keywords to find existing implementations
+2. Use `docs.get` to review the full signature and documentation of potential matches
+3. If a suitable symbol exists, reuse or extend it instead of creating a new one
+4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
+        <p>You can also create a targeted instruction file at <code>.github/instructions/code-reuse.instructions.md</code> with frontmatter to scope it to specific file patterns.</p>
+      </div>
+
+      <div class="tab-panel" id="tab-prompt-zed" role="tabpanel">
+        <p>Zed reads the first matching file from: <code>.rules</code>, <code>.cursorrules</code>, <code>AGENTS.md</code>, <code>CLAUDE.md</code>, and others. If you already have a <code>CLAUDE.md</code>, Zed will pick it up automatically. Otherwise, create a <code>.rules</code> file at your project root with the same content.</p>
+      </div>
+
+      <div class="tab-panel" id="tab-prompt-cline" role="tabpanel">
+        <p>Create a <code>.clinerules</code> file at your project root:</p>
+        <pre><code>## Code Reuse
+
+Before creating new services, utilities, or helpers, use the armillary-mcp tools to check if similar functionality already exists:
+
+1. Use `docs.search` with relevant keywords to find existing implementations
+2. Use `docs.get` to review the full signature and documentation of potential matches
+3. If a suitable symbol exists, reuse or extend it instead of creating a new one
+4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
+      </div>
+
+      <div class="tab-panel" id="tab-prompt-other" role="tabpanel">
+        <p>
+          For any other agent that supports MCP, add a system-level instruction (in whatever format
+          your agent uses) that tells it to query <code>docs.search</code> before writing new code.
+          The key points to include:
+        </p>
+        <ul>
+          <li>Search the armillary-mcp documentation index before creating new services, utilities, or helpers</li>
+          <li>Use <code>docs.search</code> with relevant keywords to find existing implementations</li>
+          <li>Use <code>docs.get</code> to review full signatures and documentation of potential matches</li>
+          <li>Reuse or extend existing symbols instead of creating duplicates</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>4. Add the MCP server to your agent</h3>
     <p>
       Add the MCP server to your agent's configuration so it can query your project's documentation index.
       The server communicates over <strong>stdio</strong> using the Model Context Protocol.
@@ -97,14 +207,14 @@
 
     <div class="tabs">
       <div class="tab-buttons" role="tablist">
-        <button class="tab-btn active" data-tab="claude-code" role="tab" aria-selected="true">Claude Code</button>
-        <button class="tab-btn" data-tab="cursor" role="tab" aria-selected="false">Cursor</button>
-        <button class="tab-btn" data-tab="windsurf" role="tab" aria-selected="false">Windsurf</button>
-        <button class="tab-btn" data-tab="vscode" role="tab" aria-selected="false">VS Code</button>
-        <button class="tab-btn" data-tab="zed" role="tab" aria-selected="false">Zed</button>
-        <button class="tab-btn" data-tab="cline" role="tab" aria-selected="false">Cline</button>
-        <button class="tab-btn" data-tab="claude-desktop" role="tab" aria-selected="false">Claude Desktop</button>
-        <button class="tab-btn" data-tab="other" role="tab" aria-selected="false">Other</button>
+        <button class="tab-btn active" data-tab="claude-code" role="tab" aria-selected="true"><svg class="tab-icon" viewBox="0 0 24 24"><path d="M17.3041 3.541h-3.6718l6.696 16.918H24Zm-10.6082 0L0 20.459h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442L10.5363 3.5409Zm-.3712 10.2232 2.2914-5.9456 2.2914 5.9456Z"/></svg> Claude Code</button>
+        <button class="tab-btn" data-tab="cursor" role="tab" aria-selected="false"><svg class="tab-icon" viewBox="0 0 24 24"><path d="M11.503.131 1.891 5.678a.84.84 0 0 0-.42.726v11.188c0 .3.162.575.42.724l9.609 5.55a1 1 0 0 0 .998 0l9.61-5.55a.84.84 0 0 0 .42-.724V6.404a.84.84 0 0 0-.42-.726L12.497.131a1.01 1.01 0 0 0-.996 0M2.657 6.338h18.55c.263 0 .43.287.297.515L12.23 22.918c-.062.107-.229.064-.229-.06V12.335a.59.59 0 0 0-.295-.51l-9.11-5.257c-.109-.063-.064-.23.061-.23"/></svg> Cursor</button>
+        <button class="tab-btn" data-tab="windsurf" role="tab" aria-selected="false"><svg class="tab-icon" viewBox="0 0 24 24"><path d="M23.55 5.067c-1.2038-.002-2.1806.973-2.1806 2.1765v4.8676c0 .972-.8035 1.7594-1.7597 1.7594-.568 0-1.1352-.286-1.4718-.7659l-4.9713-7.1003c-.4125-.5896-1.0837-.941-1.8103-.941-1.1334 0-2.1533.9635-2.1533 2.153v4.8957c0 .972-.7969 1.7594-1.7596 1.7594-.57 0-1.1363-.286-1.4728-.7658L.4076 5.1598C.2822 4.9798 0 5.0688 0 5.2882v4.2452c0 .2147.0656.4228.1884.599l5.4748 7.8183c.3234.462.8006.8052 1.3509.9298 1.3771.313 2.6446-.747 2.6446-2.0977v-4.893c0-.972.7875-1.7593 1.7596-1.7593h.003a1.798 1.798 0 0 1 1.4718.7658l4.9723 7.0994c.4135.5905 1.05.941 1.8093.941 1.1587 0 2.1515-.9645 2.1515-2.153v-4.8948c0-.972.7875-1.7594 1.7596-1.7594h.194a.22.22 0 0 0 .2204-.2202v-4.622a.22.22 0 0 0-.2203-.2203Z"/></svg> Windsurf</button>
+        <button class="tab-btn" data-tab="vscode" role="tab" aria-selected="false"><svg class="tab-icon" viewBox="0 0 24 24"><path d="M17.583 2.894 9.23 9.621 4.657 6.073l-1.324.663v10.528l1.324.663 4.573-3.548 8.353 6.727 3.084-1.529V4.423ZM6.666 14.471V9.53l3.12 2.47Zm10.917 1.657-5.562-4.128 5.562-4.128Z"/></svg> VS Code</button>
+        <button class="tab-btn" data-tab="zed" role="tab" aria-selected="false"><svg class="tab-icon" viewBox="0 0 24 24"><path d="M2.25 1.5a.75.75 0 0 0-.75.75v16.5H0V2.25A2.25 2.25 0 0 1 2.25 0h20.095c1.002 0 1.504 1.212.795 1.92L10.764 14.298h3.486V12.75h1.5v1.922a1.125 1.125 0 0 1-1.125 1.125H9.264l-2.578 2.578h11.689V9h1.5v9.375a1.5 1.5 0 0 1-1.5 1.5H5.185L2.562 22.5H21.75a.75.75 0 0 0 .75-.75V5.25H24v16.5A2.25 2.25 0 0 1 21.75 24H1.655C.653 24 .151 22.788.86 22.08L13.19 9.75H9.75v1.5h-1.5V9.375A1.125 1.125 0 0 1 9.375 8.25h5.314l2.625-2.625H5.625V15h-1.5V5.625a1.5 1.5 0 0 1 1.5-1.5h13.19L21.438 1.5z"/></svg> Zed</button>
+        <button class="tab-btn" data-tab="cline" role="tab" aria-selected="false"><svg class="tab-icon" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="19" x2="20" y2="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Cline</button>
+        <button class="tab-btn" data-tab="claude-desktop" role="tab" aria-selected="false"><svg class="tab-icon" viewBox="0 0 24 24"><path d="M17.3041 3.541h-3.6718l6.696 16.918H24Zm-10.6082 0L0 20.459h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442L10.5363 3.5409Zm-.3712 10.2232 2.2914-5.9456 2.2914 5.9456Z"/></svg> Claude Desktop</button>
+        <button class="tab-btn" data-tab="other" role="tab" aria-selected="false"><svg class="tab-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Other</button>
       </div>
 
       <div class="tab-panel active" id="tab-claude-code" role="tabpanel">
@@ -207,118 +317,10 @@
       </div>
     </div>
 
-    <h3>4. Keep the index current</h3>
-    <p>
-      During active development, run the watcher so your index stays up to date as you edit code:
-    </p>
+    <h3>5. Watch for changes</h3>
     <pre><code>npx armillary-mcp watch</code></pre>
-  </section>
-
-  <!-- Agent Prompt Configuration -->
-  <section id="agent-prompt-configuration">
-    <h2>Agent Prompt Configuration</h2>
-
-    <p>
-      Connecting the MCP server gives your agent <em>access</em> to the documentation tools, but
-      you also want to <em>instruct</em> the agent to use them proactively. Adding a prompt snippet
-      to your agent's configuration ensures it checks the index before creating new code.
-    </p>
-
-    <div class="tabs">
-      <div class="tab-buttons" role="tablist">
-        <button class="tab-btn active" data-tab="prompt-claude-code" role="tab" aria-selected="true">Claude Code</button>
-        <button class="tab-btn" data-tab="prompt-cursor" role="tab" aria-selected="false">Cursor</button>
-        <button class="tab-btn" data-tab="prompt-windsurf" role="tab" aria-selected="false">Windsurf</button>
-        <button class="tab-btn" data-tab="prompt-vscode" role="tab" aria-selected="false">VS Code</button>
-        <button class="tab-btn" data-tab="prompt-zed" role="tab" aria-selected="false">Zed</button>
-        <button class="tab-btn" data-tab="prompt-cline" role="tab" aria-selected="false">Cline</button>
-        <button class="tab-btn" data-tab="prompt-other" role="tab" aria-selected="false">Other</button>
-      </div>
-
-      <div class="tab-panel active" id="tab-prompt-claude-code" role="tabpanel">
-        <p>Add the following to your project's <code>CLAUDE.md</code> (or <code>.claude/CLAUDE.md</code>):</p>
-        <pre><code>## Code Reuse
-
-Before creating new services, utilities, or helpers, use the project documentation tools to check if similar functionality already exists:
-
-1. Use `docs.search` with relevant keywords to find existing implementations
-2. Use `docs.get` to review the full signature and documentation of potential matches
-3. If a suitable symbol exists, reuse or extend it instead of creating a new one
-4. If nothing suitable exists, proceed with creating a new implementation
-
-This prevents duplicate services and keeps the codebase consistent.</code></pre>
-      </div>
-
-      <div class="tab-panel" id="tab-prompt-cursor" role="tabpanel">
-        <p>Create a rule file at <code>.cursor/rules/code-reuse.mdc</code>:</p>
-        <pre><code>---
-description: Check project documentation before creating new code
-globs:
-  - "src/**/*.ts"
-  - "src/**/*.tsx"
----
-
-Before creating new services, utilities, or helpers, use the project documentation tools to check if similar functionality already exists:
-
-1. Use `docs.search` with relevant keywords to find existing implementations
-2. Use `docs.get` to review the full signature and documentation of potential matches
-3. If a suitable symbol exists, reuse or extend it instead of creating a new one
-4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
-      </div>
-
-      <div class="tab-panel" id="tab-prompt-windsurf" role="tabpanel">
-        <p>Create a rule file at <code>.windsurf/rules/code-reuse.md</code>:</p>
-        <pre><code>Before creating new services, utilities, or helpers, use the project documentation tools to check if similar functionality already exists:
-
-1. Use `docs.search` with relevant keywords to find existing implementations
-2. Use `docs.get` to review the full signature and documentation of potential matches
-3. If a suitable symbol exists, reuse or extend it instead of creating a new one
-4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
-        <p>Note: Windsurf rules have a 6,000 character limit per file.</p>
-      </div>
-
-      <div class="tab-panel" id="tab-prompt-vscode" role="tabpanel">
-        <p>Add to your project's <code>.github/copilot-instructions.md</code> (create the file if it doesn't exist):</p>
-        <pre><code>## Code Reuse
-
-Before creating new services, utilities, or helpers, use the project documentation tools to check if similar functionality already exists:
-
-1. Use `docs.search` with relevant keywords to find existing implementations
-2. Use `docs.get` to review the full signature and documentation of potential matches
-3. If a suitable symbol exists, reuse or extend it instead of creating a new one
-4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
-        <p>You can also create a targeted instruction file at <code>.github/instructions/code-reuse.instructions.md</code> with frontmatter to scope it to specific file patterns.</p>
-      </div>
-
-      <div class="tab-panel" id="tab-prompt-zed" role="tabpanel">
-        <p>Zed reads the first matching file from: <code>.rules</code>, <code>.cursorrules</code>, <code>AGENTS.md</code>, <code>CLAUDE.md</code>, and others. If you already have a <code>CLAUDE.md</code>, Zed will pick it up automatically. Otherwise, create a <code>.rules</code> file at your project root with the same content.</p>
-      </div>
-
-      <div class="tab-panel" id="tab-prompt-cline" role="tabpanel">
-        <p>Create a <code>.clinerules</code> file at your project root:</p>
-        <pre><code>## Code Reuse
-
-Before creating new services, utilities, or helpers, use the project documentation tools to check if similar functionality already exists:
-
-1. Use `docs.search` with relevant keywords to find existing implementations
-2. Use `docs.get` to review the full signature and documentation of potential matches
-3. If a suitable symbol exists, reuse or extend it instead of creating a new one
-4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
-      </div>
-
-      <div class="tab-panel" id="tab-prompt-other" role="tabpanel">
-        <p>
-          For any other agent that supports MCP, add a system-level instruction (in whatever format
-          your agent uses) that tells it to query <code>docs.search</code> before writing new code.
-          The key points to include:
-        </p>
-        <ul>
-          <li>Search the project documentation index before creating new services, utilities, or helpers</li>
-          <li>Use <code>docs.search</code> with relevant keywords to find existing implementations</li>
-          <li>Use <code>docs.get</code> to review full signatures and documentation of potential matches</li>
-          <li>Reuse or extend existing symbols instead of creating duplicates</li>
-        </ul>
-      </div>
+    <div class="tip">
+      <p><strong>Tip:</strong> Add the watch command to your dev script (e.g. alongside your dev server) so the index always stays current while you work.</p>
     </div>
   </section>
 
