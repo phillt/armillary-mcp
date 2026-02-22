@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import path from "node:path";
 import fs from "node:fs/promises";
 import os from "node:os";
-import { loadPlugins, findPluginFiles, type ArmillaryPlugin } from "./plugins.js";
-import { SymbolDocSchema } from "./schema.js";
-import { generateDocIndex } from "./indexer.js";
-import { watchAndRegenerate } from "./watcher.js";
+import { loadPlugins, findPluginFiles, type ArmillaryPlugin } from "../plugins.js";
+import { SymbolDocSchema } from "../schema.js";
+import { generateDocIndex } from "../indexer.js";
+import { watchAndRegenerate } from "../watcher.js";
 
 // ── validatePlugin / loadPlugins ─────────────────────────────────────
 
@@ -110,6 +110,12 @@ describe("loadPlugins", () => {
     await expect(
       loadPlugins(["nonexistent-plugin-xyz-12345"], "/tmp")
     ).rejects.toThrow(/Failed to load plugin/);
+  });
+
+  it("rejects relative paths that traverse outside project root", async () => {
+    await expect(
+      loadPlugins(["../../etc/malicious.mjs"], "/home/user/project")
+    ).rejects.toThrow(/resolves outside the project root/);
   });
 });
 
@@ -321,6 +327,45 @@ describe("generateDocIndex with plugins", () => {
     expect(fnSymbol).toBeDefined();
   });
 
+  it("extractSymbols path: normalizes absolute filePaths to relative", async () => {
+    await fs.writeFile(
+      path.join(tmpDir, "Abs.custom"),
+      "content"
+    );
+
+    const plugin: ArmillaryPlugin = {
+      name: "abs-path-plugin",
+      extensions: [".custom"],
+      extractSymbols: (filePath) => {
+        // Return absolute path — core should normalize it
+        return [
+          {
+            id: `absolute#default`,
+            kind: "component" as const,
+            name: "Abs",
+            filePath, // absolute path
+            exported: true,
+          },
+        ];
+      },
+    };
+
+    const index = await generateDocIndex({
+      tsConfigFilePath: path.join(tmpDir, "tsconfig.json"),
+      projectRoot: tmpDir,
+      outputPath: path.join(tmpDir, "out.json"),
+      plugins: [plugin],
+    });
+
+    const sym = index.symbols.find((s) => s.name === "Abs");
+    expect(sym).toBeDefined();
+    // filePath should be relative, not absolute
+    expect(path.isAbsolute(sym!.filePath)).toBe(false);
+    expect(sym!.filePath).toBe("Abs.custom");
+    // id should be rewritten with the relative path
+    expect(sym!.id).toBe("Abs.custom#Abs");
+  });
+
   it("extract path: plugin returns TS code that gets indexed", async () => {
     await fs.writeFile(
       path.join(tmpDir, "utils.ext"),
@@ -397,7 +442,7 @@ describe("generateDocIndex with plugins", () => {
     expect(disposeFn).toHaveBeenCalledOnce();
   });
 
-  it("dispose is called for first plugin when second plugin init throws", async () => {
+  it("only disposes successfully initialized plugins when a later init throws", async () => {
     const dispose1 = vi.fn();
     const dispose2 = vi.fn();
 
@@ -428,8 +473,10 @@ describe("generateDocIndex with plugins", () => {
       })
     ).rejects.toThrow("init failed");
 
+    // plugin1 initialized successfully, so it should be disposed
     expect(dispose1).toHaveBeenCalledOnce();
-    expect(dispose2).toHaveBeenCalledOnce();
+    // plugin2 never initialized, so it should NOT be disposed
+    expect(dispose2).not.toHaveBeenCalled();
   });
 
   it("symbols are sorted by id for determinism", async () => {
