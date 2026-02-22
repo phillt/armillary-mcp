@@ -1,13 +1,16 @@
-import { Project } from "ts-morph";
+import { Project, ScriptKind } from "ts-morph";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { DocIndexSchema, type DocIndex, type SymbolDoc } from "./schema.js";
 import { extractFileSymbols } from "./extractor.js";
+import type { ArmillaryPlugin } from "./plugins.js";
+import { findPluginFiles } from "./plugins.js";
 
 export interface IndexerOptions {
   tsConfigFilePath: string;
   projectRoot: string;
   outputPath?: string;
+  plugins?: ArmillaryPlugin[];
 }
 
 const EXCLUDED_PATTERNS = [
@@ -29,7 +32,7 @@ function toRelativePosixPath(filePath: string, projectRoot: string): string {
 export async function generateDocIndex(
   options: IndexerOptions
 ): Promise<DocIndex> {
-  const { tsConfigFilePath, projectRoot } = options;
+  const { tsConfigFilePath, projectRoot, plugins } = options;
   const outputPath =
     options.outputPath ?? path.join(projectRoot, ".armillary-mcp-docs", "index.json");
 
@@ -51,6 +54,61 @@ export async function generateDocIndex(
     const symbols = extractFileSymbols(sourceFile, projectRoot);
     allSymbols.push(...symbols);
   }
+
+  // Process plugins
+  if (plugins && plugins.length > 0) {
+    const pluginContext = { projectRoot, tsConfigFilePath };
+
+    // Initialize all plugins
+    for (const plugin of plugins) {
+      await plugin.init?.(pluginContext);
+    }
+
+    try {
+      for (const plugin of plugins) {
+        const files = await findPluginFiles(
+          projectRoot,
+          plugin.extensions,
+          EXCLUDED_PATTERNS
+        );
+
+        for (const filePath of files) {
+          const content = await fs.readFile(filePath, "utf-8");
+
+          if (plugin.extractSymbols) {
+            const symbols = await plugin.extractSymbols(filePath, content);
+            allSymbols.push(...symbols);
+          } else if (plugin.extract) {
+            const tsCode = plugin.extract(filePath, content);
+            if (tsCode) {
+              const virtualPath = filePath + ".ts";
+              const sf = project.createSourceFile(virtualPath, tsCode, {
+                scriptKind: ScriptKind.TS,
+                overwrite: true,
+              });
+              const symbols = extractFileSymbols(sf, projectRoot);
+              // Rewrite filePath to point to the original file, not the virtual .ts
+              const relativePath = toRelativePosixPath(filePath, projectRoot);
+              for (const sym of symbols) {
+                sym.filePath = relativePath;
+                sym.id = `${relativePath}#${sym.name}`;
+              }
+              allSymbols.push(...symbols);
+              project.removeSourceFile(sf);
+            }
+          }
+        }
+      }
+    } finally {
+      // Dispose all plugins
+      for (const plugin of plugins) {
+        await plugin.dispose?.();
+      }
+    }
+  }
+
+  // Sort all symbols by id for determinism
+  allSymbols.sort((a, b) => a.id.localeCompare(b.id));
 
   const docIndex: DocIndex = {
     version: "1.0.0",
