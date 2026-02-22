@@ -8,3 +8,4 @@ node_modules/
 dist/
 
 .mcp-docs/
+/.armillary-mcp-docs/
