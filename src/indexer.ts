@@ -58,11 +58,13 @@ export async function generateDocIndex(
   // Process plugins
   if (plugins && plugins.length > 0) {
     const pluginContext = { projectRoot, tsConfigFilePath };
+    const initializedPlugins: ArmillaryPlugin[] = [];
 
     try {
-      // Initialize all plugins
+      // Initialize all plugins, tracking which ones succeed
       for (const plugin of plugins) {
         await plugin.init?.(pluginContext);
+        initializedPlugins.push(plugin);
       }
 
       for (const plugin of plugins) {
@@ -100,8 +102,8 @@ export async function generateDocIndex(
         }
       }
     } finally {
-      // Dispose all plugins
-      for (const plugin of plugins) {
+      // Only dispose plugins that were successfully initialized
+      for (const plugin of initializedPlugins) {
         await plugin.dispose?.();
       }
     }
