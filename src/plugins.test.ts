@@ -5,6 +5,7 @@ import os from "node:os";
 import { loadPlugins, findPluginFiles, type ArmillaryPlugin } from "./plugins.js";
 import { SymbolDocSchema } from "./schema.js";
 import { generateDocIndex } from "./indexer.js";
+import { watchAndRegenerate } from "./watcher.js";
 
 // ── validatePlugin / loadPlugins ─────────────────────────────────────
 
@@ -396,6 +397,41 @@ describe("generateDocIndex with plugins", () => {
     expect(disposeFn).toHaveBeenCalledOnce();
   });
 
+  it("dispose is called for first plugin when second plugin init throws", async () => {
+    const dispose1 = vi.fn();
+    const dispose2 = vi.fn();
+
+    const plugin1: ArmillaryPlugin = {
+      name: "ok-plugin",
+      extensions: [".nope"],
+      extractSymbols: () => [],
+      init: () => {},
+      dispose: dispose1,
+    };
+
+    const plugin2: ArmillaryPlugin = {
+      name: "bad-init",
+      extensions: [".nope"],
+      extractSymbols: () => [],
+      init: () => {
+        throw new Error("init failed");
+      },
+      dispose: dispose2,
+    };
+
+    await expect(
+      generateDocIndex({
+        tsConfigFilePath: path.join(tmpDir, "tsconfig.json"),
+        projectRoot: tmpDir,
+        outputPath: path.join(tmpDir, "out.json"),
+        plugins: [plugin1, plugin2],
+      })
+    ).rejects.toThrow("init failed");
+
+    expect(dispose1).toHaveBeenCalledOnce();
+    expect(dispose2).toHaveBeenCalledOnce();
+  });
+
   it("symbols are sorted by id for determinism", async () => {
     await fs.writeFile(path.join(tmpDir, "z.custom"), "");
     await fs.writeFile(path.join(tmpDir, "a.custom"), "");
@@ -428,4 +464,84 @@ describe("generateDocIndex with plugins", () => {
     const sorted = [...ids].sort();
     expect(ids).toEqual(sorted);
   });
+});
+
+// ── Watcher: plugin extensions trigger rebuilds ──────────────────────
+
+describe("watchAndRegenerate with plugin extensions", () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "armillary-watch-plugin-"));
+
+    await fs.writeFile(
+      path.join(tmpDir, "tsconfig.json"),
+      JSON.stringify({
+        compilerOptions: { target: "ES2022", module: "ESNext", strict: true },
+        include: ["src"],
+      })
+    );
+
+    await fs.mkdir(path.join(tmpDir, "src"));
+    await fs.writeFile(
+      path.join(tmpDir, "src", "main.ts"),
+      `export function hello() { return "hi"; }\n`
+    );
+  });
+
+  afterEach(async () => {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it("rebuilds when a plugin-extension file is added", async () => {
+    const onBuildComplete = vi.fn();
+
+    const plugin: ArmillaryPlugin = {
+      name: "custom-watcher",
+      extensions: [".custom"],
+      extractSymbols: (filePath) => {
+        const name = path.basename(filePath, ".custom");
+        const rel = path.relative(tmpDir, filePath).split(path.sep).join("/");
+        return [
+          {
+            id: `${rel}#default`,
+            kind: "component" as const,
+            name,
+            filePath: rel,
+            exported: true,
+          },
+        ];
+      },
+    };
+
+    const handle = await watchAndRegenerate({
+      tsConfigFilePath: path.join(tmpDir, "tsconfig.json"),
+      projectRoot: tmpDir,
+      watchPaths: [path.join(tmpDir, "src")],
+      debounceMs: 100,
+      plugins: [plugin],
+      onBuildComplete,
+    });
+
+    try {
+      // Initial build done
+      expect(onBuildComplete).toHaveBeenCalledTimes(1);
+      onBuildComplete.mockClear();
+
+      // Add a .custom file — should trigger a rebuild
+      await fs.writeFile(
+        path.join(tmpDir, "src", "Widget.custom"),
+        "<custom>content</custom>"
+      );
+
+      await vi.waitFor(
+        () => {
+          expect(onBuildComplete).toHaveBeenCalled();
+        },
+        { timeout: 10_000, interval: 100 }
+      );
+    } finally {
+      await handle.close();
+    }
+  }, 15_000);
 });
