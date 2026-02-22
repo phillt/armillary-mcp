@@ -18,19 +18,24 @@ Commands:
 
 async function readPluginConfig(projectRoot: string): Promise<string[]> {
   const pkgPath = path.join(projectRoot, "package.json");
+  let raw: string;
   try {
-    const raw = await fs.readFile(pkgPath, "utf-8");
-    const pkg = JSON.parse(raw) as Record<string, unknown>;
-    const config = pkg["armillary-mcp"] as
-      | Record<string, unknown>
-      | undefined;
-    if (config && Array.isArray(config.plugins)) {
-      return config.plugins.filter(
-        (p: unknown): p is string => typeof p === "string"
-      );
+    raw = await fs.readFile(pkgPath, "utf-8");
+  } catch (err: unknown) {
+    if (err instanceof Error && "code" in err && err.code === "ENOENT") {
+      return [];
     }
-  } catch {
-    // No package.json or unreadable — no plugins
+    throw err;
+  }
+
+  const pkg = JSON.parse(raw) as Record<string, unknown>;
+  const config = pkg["armillary-mcp"] as
+    | Record<string, unknown>
+    | undefined;
+  if (config && Array.isArray(config.plugins)) {
+    return config.plugins.filter(
+      (p: unknown): p is string => typeof p === "string"
+    );
   }
   return [];
 }
