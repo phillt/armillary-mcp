@@ -29,21 +29,20 @@ Generate the documentation index:
 npx armillary-mcp build
 ```
 
-Start the MCP server:
+Connect your AI coding assistant. For **Claude Code**, register the server with the CLI:
 
 ```sh
-npx armillary-mcp-server
+claude mcp add --transport stdio armillary-mcp -- npx armillary-mcp-server
 ```
 
-Connect your AI coding assistant. For Claude Code (`.claude/settings.json`), Cursor, or any MCP client:
+For **Cursor**, **Windsurf**, or other MCP clients, add to your client's config file:
 
 ```json
 {
   "mcpServers": {
     "armillary": {
       "command": "npx",
-      "args": ["armillary-mcp-server"],
-      "cwd": "/path/to/your/project"
+      "args": ["armillary-mcp-server"]
     }
   }
 }

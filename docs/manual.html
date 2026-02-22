@@ -106,16 +106,10 @@
       </div>
 
       <div class="tab-panel active" id="tab-claude-code" role="tabpanel">
-        <p>Add a <code>.mcp.json</code> file to your project root:</p>
-        <pre><code>{
-  "mcpServers": {
-    "armillary": {
-      "command": "npx",
-      "args": ["armillary-mcp-server"]
-    }
-  }
-}</code></pre>
-        <p>This is the project-scoped config that can be shared via version control. You can also add it to <code>~/.claude.json</code> for user-level scope.</p>
+        <p>Register the server using the Claude Code CLI:</p>
+        <pre><code>claude mcp add --transport stdio armillary-mcp -- npx armillary-mcp-server</code></pre>
+        <p>This adds a local stdio server scoped to the current project. To share it across all projects, add <code>--scope user</code>. To share it with your team via version control, use <code>--scope project</code> (creates a <code>.mcp.json</code> file).</p>
+        <p>Verify the server is connected by running <code>/mcp</code> inside Claude Code.</p>
       </div>
 
       <div class="tab-panel" id="tab-cursor" role="tabpanel">
