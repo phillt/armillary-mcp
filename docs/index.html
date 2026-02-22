@@ -164,11 +164,26 @@
     <ol class="steps">
       <li>
         <strong>Install</strong>
-        <pre><code>pnpm add -D armillary-mcp</code></pre>
+        <div class="tabs">
+          <div class="tab-buttons" role="tablist">
+            <button class="tab-btn active" data-tab="install-npm" role="tab" aria-selected="true"><svg class="tab-icon" viewBox="0 0 24 24"><path d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323l13.837.019-.009 13.836h-3.464l.01-10.382h-3.456L12.04 19.17H5.113z"/></svg> npm</button>
+            <button class="tab-btn" data-tab="install-pnpm" role="tab" aria-selected="false"><svg class="tab-icon" viewBox="0 0 24 24"><path d="M0 0v7.5h7.5V0zm8.25 0v7.5h7.498V0zm8.25 0v7.5H24V0zM2 2h3.5v3.5H2zm8.25 0h3.498v3.5H10.25zm8.25 0H22v3.5h-3.5zM8.25 8.25v7.5h7.498v-7.5zm8.25 0v7.5H24v-7.5zm2 2H22v3.5h-3.5zM0 16.5V24h7.5v-7.5zm8.25 0V24h7.498v-7.5zm8.25 0V24H24v-7.5z"/></svg> pnpm</button>
+          </div>
+          <div class="tab-panel active" id="tab-install-npm" role="tabpanel">
+            <pre><code>npm install --save-dev armillary-mcp</code></pre>
+          </div>
+          <div class="tab-panel" id="tab-install-pnpm" role="tabpanel">
+            <pre><code>pnpm add -D armillary-mcp</code></pre>
+          </div>
+        </div>
       </li>
       <li>
-        <strong>Generate documentation index</strong>
+        <strong>Build the documentation index</strong>
         <pre><code>npx armillary-mcp build</code></pre>
+      </li>
+      <li>
+        <strong>Add code-reuse instructions to your agent</strong>
+        <p>Tell your agent to check the documentation index before creating new code. See the <a href="manual.html#quick-setup">manual</a> for agent-specific prompt snippets.</p>
       </li>
       <li>
         <strong>Connect your AI coding assistant</strong>
