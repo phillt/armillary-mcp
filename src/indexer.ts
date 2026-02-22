@@ -13,7 +13,7 @@ export interface IndexerOptions {
   plugins?: ArmillaryPlugin[];
 }
 
-const EXCLUDED_PATTERNS = [
+export const EXCLUDED_PATTERNS = [
   /node_modules/,
   /\.next/,
   /dist\//,
@@ -59,12 +59,12 @@ export async function generateDocIndex(
   if (plugins && plugins.length > 0) {
     const pluginContext = { projectRoot, tsConfigFilePath };
 
-    // Initialize all plugins
-    for (const plugin of plugins) {
-      await plugin.init?.(pluginContext);
-    }
-
     try {
+      // Initialize all plugins
+      for (const plugin of plugins) {
+        await plugin.init?.(pluginContext);
+      }
+
       for (const plugin of plugins) {
         const files = await findPluginFiles(
           projectRoot,
