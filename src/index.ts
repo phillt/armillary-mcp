@@ -14,3 +14,9 @@ export {
   getSymbol,
   searchSymbols,
 } from "./server-handlers.js";
+export {
+  loadPlugins,
+  findPluginFiles,
+  type ArmillaryPlugin,
+  type PluginContext,
+} from "./plugins.js";

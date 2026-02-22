@@ -55,6 +55,7 @@
           <li><a href="#programmatic-api">Programmatic API</a></li>
           <li><a href="#schema-reference">Schema Reference</a></li>
           <li><a href="#configuration">Configuration</a></li>
+          <li><a href="#plugins">Plugins</a></li>
           <li><a href="#output-format">Output Format</a></li>
         </ol>
       </nav>
@@ -360,7 +361,8 @@ Documentation generated: 42 symbols
     <h3><code>armillary-mcp watch</code></h3>
     <p>
       Starts a file system watcher that monitors your project for <code>.ts</code> and
-      <code>.tsx</code> file changes. When a change is detected, the documentation index
+      <code>.tsx</code> file changes (plus any extensions registered by <a href="#plugins">plugins</a>).
+      When a change is detected, the documentation index
       is regenerated automatically. Changes are debounced with a 300ms delay.
     </p>
     <p>The watcher ignores:</p>
@@ -477,6 +479,8 @@ Commands:
   listSymbols,
   getSymbol,
   searchSymbols,
+  loadPlugins,
+  findPluginFiles,
   DocIndexSchema,
   SymbolDocSchema,
 } from "armillary-mcp";</code></pre>
@@ -498,6 +502,7 @@ const index = await generateDocIndex({
         <tr><td><code>tsConfigFilePath</code></td><td>string</td><td>Yes</td><td>Path to tsconfig.json</td></tr>
         <tr><td><code>projectRoot</code></td><td>string</td><td>Yes</td><td>Project root directory</td></tr>
         <tr><td><code>outputPath</code></td><td>string</td><td>No</td><td>Output path (default: <code>.armillary-mcp-docs/index.json</code>)</td></tr>
+        <tr><td><code>plugins</code></td><td>ArmillaryPlugin[]</td><td>No</td><td>Loaded plugins for additional file types (see <a href="#plugins">Plugins</a>)</td></tr>
       </tbody>
     </table>
     <p>Returns: <code>Promise&lt;DocIndex&gt;</code></p>
@@ -619,7 +624,7 @@ const parsed = DocIndexSchema.parse(rawJson);</code></pre>
       <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
       <tbody>
         <tr><td><code>id</code></td><td>string</td><td>Yes</td><td>Stable identifier (<code>filePath#exportName</code>)</td></tr>
-        <tr><td><code>kind</code></td><td>string</td><td>Yes</td><td><code>"function"</code> | <code>"class"</code> | <code>"type"</code> | <code>"const"</code> | <code>"interface"</code> | <code>"enum"</code></td></tr>
+        <tr><td><code>kind</code></td><td>string</td><td>Yes</td><td><code>"function"</code> | <code>"class"</code> | <code>"type"</code> | <code>"const"</code> | <code>"interface"</code> | <code>"enum"</code> | <code>"component"</code></td></tr>
         <tr><td><code>name</code></td><td>string</td><td>Yes</td><td>Symbol name</td></tr>
         <tr><td><code>filePath</code></td><td>string</td><td>Yes</td><td>Relative POSIX path from project root</td></tr>
         <tr><td><code>exported</code></td><td>boolean</td><td>Yes</td><td>Whether the symbol is exported</td></tr>
@@ -667,6 +672,241 @@ const parsed = DocIndexSchema.parse(rawJson);</code></pre>
       <li><code>dist/</code></li>
       <li><code>*.d.ts</code> files</li>
       <li><code>.armillary-mcp-docs/</code> output directory</li>
+    </ul>
+  </section>
+
+  <!-- Plugins -->
+  <section id="plugins">
+    <h2>Plugins</h2>
+
+    <p>
+      By default armillary-mcp indexes <code>.ts</code> and <code>.tsx</code> files using TypeScript's
+      compiler. <strong>Plugins</strong> extend this to additional file types — Vue, Svelte, or any
+      custom format — so every component in your project is discoverable by your AI coding assistant.
+    </p>
+
+    <h3>Using Plugins</h3>
+
+    <h4>1. Install the plugin</h4>
+    <p>Plugins are regular npm packages. Install them alongside armillary-mcp:</p>
+    <div class="tabs">
+      <div class="tab-buttons" role="tablist">
+        <button class="tab-btn active" data-tab="plugin-install-npm" role="tab" aria-selected="true"><svg class="tab-icon" viewBox="0 0 24 24"><path d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323l13.837.019-.009 13.836h-3.464l.01-10.382h-3.456L12.04 19.17H5.113z"/></svg> npm</button>
+        <button class="tab-btn" data-tab="plugin-install-pnpm" role="tab" aria-selected="false"><svg class="tab-icon" viewBox="0 0 24 24"><path d="M0 0v7.5h7.5V0zm8.25 0v7.5h7.498V0zm8.25 0v7.5H24V0zM2 2h3.5v3.5H2zm8.25 0h3.498v3.5H10.25zm8.25 0H22v3.5h-3.5zM8.25 8.25v7.5h7.498v-7.5zm8.25 0v7.5H24v-7.5zm2 2H22v3.5h-3.5zM0 16.5V24h7.5v-7.5zm8.25 0V24h7.498v-7.5zm8.25 0V24H24v-7.5z"/></svg> pnpm</button>
+      </div>
+      <div class="tab-panel active" id="tab-plugin-install-npm" role="tabpanel">
+        <pre><code>npm install --save-dev armillary-mcp-plugin-vue</code></pre>
+      </div>
+      <div class="tab-panel" id="tab-plugin-install-pnpm" role="tabpanel">
+        <pre><code>pnpm add -D armillary-mcp-plugin-vue</code></pre>
+      </div>
+    </div>
+
+    <h4>2. Register it in package.json</h4>
+    <p>Add an <code>armillary-mcp</code> section to your project's <code>package.json</code>:</p>
+    <pre><code>{
+  "armillary-mcp": {
+    "plugins": ["armillary-mcp-plugin-vue"]
+  }
+}</code></pre>
+    <p>
+      Each entry in the <code>plugins</code> array is either an npm package name or a relative path
+      to a local plugin file (e.g. <code>"./my-plugin.mjs"</code>).
+    </p>
+
+    <h4>3. Build or watch as usual</h4>
+    <p>No extra CLI flags needed. The <code>build</code> and <code>watch</code> commands automatically
+      detect configured plugins, index the matching file types, and include them in the output.</p>
+    <pre><code>npx armillary-mcp build
+# Generating documentation index...
+#   Plugins: armillary-mcp-plugin-vue
+# Generated index with 58 symbols</code></pre>
+    <p>The <code>watch</code> command also monitors plugin file extensions for changes.</p>
+
+    <h4>Multiple plugins</h4>
+    <p>You can register as many plugins as you need:</p>
+    <pre><code>{
+  "armillary-mcp": {
+    "plugins": [
+      "armillary-mcp-plugin-vue",
+      "armillary-mcp-plugin-svelte",
+      "./plugins/custom-format.mjs"
+    ]
+  }
+}</code></pre>
+
+    <h4>Programmatic usage</h4>
+    <p>When using the API directly, load plugins and pass them to the indexer:</p>
+    <pre><code>import { generateDocIndex, loadPlugins } from "armillary-mcp";
+
+const plugins = await loadPlugins(
+  ["armillary-mcp-plugin-vue"],
+  process.cwd()
+);
+
+const index = await generateDocIndex({
+  tsConfigFilePath: "./tsconfig.json",
+  projectRoot: process.cwd(),
+  plugins,
+});</code></pre>
+
+    <h3>Creating a Plugin</h3>
+
+    <p>
+      A plugin is a module that default-exports an object conforming to the <code>ArmillaryPlugin</code>
+      interface. Import the types from the <code>armillary-mcp</code> package:
+    </p>
+    <pre><code>import type { ArmillaryPlugin, PluginContext, SymbolDoc } from "armillary-mcp";</code></pre>
+
+    <h4>The ArmillaryPlugin Interface</h4>
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>name</code></td><td>string</td><td>Yes</td><td>Plugin identifier (e.g. <code>"vue"</code>)</td></tr>
+        <tr><td><code>extensions</code></td><td>string[]</td><td>Yes</td><td>File extensions to handle, dot-prefixed (e.g. <code>[".vue"]</code>)</td></tr>
+        <tr><td><code>init(ctx)</code></td><td>(ctx: PluginContext) =&gt; void | Promise&lt;void&gt;</td><td>No</td><td>Called once before extraction begins</td></tr>
+        <tr><td><code>dispose()</code></td><td>() =&gt; void | Promise&lt;void&gt;</td><td>No</td><td>Called after extraction finishes (always, even on error)</td></tr>
+        <tr><td><code>extract(filePath, content)</code></td><td>(filePath: string, content: string) =&gt; string | null</td><td>*</td><td>Return extracted TypeScript code, or <code>null</code> to skip the file</td></tr>
+        <tr><td><code>extractSymbols(filePath, content)</code></td><td>(filePath: string, content: string) =&gt; SymbolDoc[] | Promise&lt;SymbolDoc[]&gt;</td><td>*</td><td>Return fully-formed symbol documentation directly</td></tr>
+      </tbody>
+    </table>
+    <p>* A plugin must implement at least one of <code>extract</code> or <code>extractSymbols</code>.</p>
+
+    <p>The <code>PluginContext</code> passed to <code>init</code> contains:</p>
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>projectRoot</code></td><td>string</td><td>Absolute path to the project root directory</td></tr>
+        <tr><td><code>tsConfigFilePath</code></td><td>string</td><td>Absolute path to the tsconfig.json file</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Choosing between extract and extractSymbols</h4>
+
+    <p>Plugins support two extraction strategies. Choose the one that fits your use case:</p>
+
+    <table>
+      <thead><tr><th></th><th><code>extract</code></th><th><code>extractSymbols</code></th></tr></thead>
+      <tbody>
+        <tr><td><strong>Approach</strong></td><td>Return TypeScript source code</td><td>Return <code>SymbolDoc[]</code> directly</td></tr>
+        <tr><td><strong>What happens</strong></td><td>Core adds it as a virtual source file in ts-morph and runs the normal extraction pipeline</td><td>Symbols are merged into the index as-is, bypassing ts-morph</td></tr>
+        <tr><td><strong>Best for</strong></td><td>Formats where extracting a <code>&lt;script&gt;</code> block is sufficient</td><td>Frameworks with dedicated analysis tools that provide richer metadata</td></tr>
+        <tr><td><strong>Example</strong></td><td>Basic Svelte plugin (extract the <code>&lt;script&gt;</code> tag)</td><td>Vue plugin using <code>vue-component-meta</code></td></tr>
+      </tbody>
+    </table>
+
+    <h4>Example: Simple extract plugin</h4>
+    <p>
+      The <code>extract</code> strategy is the simplest approach. Return a string of valid TypeScript
+      and armillary-mcp handles the rest — symbol extraction, signatures, JSDoc parsing.
+    </p>
+    <pre><code>import type { ArmillaryPlugin } from "armillary-mcp";
+
+const plugin: ArmillaryPlugin = {
+  name: "svelte-basic",
+  extensions: [".svelte"],
+
+  extract(filePath, content) {
+    // Pull out the &lt;script lang="ts"&gt; block
+    const match = content.match(
+      /&lt;script\s+lang=["']ts["'][^&gt;]*&gt;([\s\S]*?)&lt;\/script&gt;/
+    );
+    return match ? match[1] : null;
+  },
+};
+
+export default plugin;</code></pre>
+    <p>
+      The returned code is fed into ts-morph as a virtual source file. The resulting symbols
+      automatically get their <code>filePath</code> and <code>id</code> rewritten to reference the
+      original <code>.svelte</code> file rather than the virtual <code>.ts</code>.
+    </p>
+
+    <h4>Example: Rich extractSymbols plugin</h4>
+    <p>
+      The <code>extractSymbols</code> strategy gives you full control. Use it when a dedicated
+      analysis tool provides better results than plain TypeScript extraction — for example,
+      <code>vue-component-meta</code> understands Vue macros like <code>defineProps</code> and
+      <code>defineEmits</code> that don't appear in the <code>&lt;script&gt;</code> block as
+      regular TypeScript.
+    </p>
+    <pre><code>import { createChecker } from "vue-component-meta";
+import path from "node:path";
+import type { ArmillaryPlugin, PluginContext, SymbolDoc } from "armillary-mcp";
+
+let checker: ReturnType&lt;typeof createChecker&gt;;
+let root: string;
+
+const plugin: ArmillaryPlugin = {
+  name: "vue",
+  extensions: [".vue"],
+
+  init(ctx: PluginContext) {
+    checker = createChecker(ctx.tsConfigFilePath);
+    root = ctx.projectRoot;
+  },
+
+  async extractSymbols(filePath) {
+    const meta = checker.getComponentMeta(filePath);
+    const rel = path.relative(root, filePath).split(path.sep).join("/");
+    const name = meta.name || path.basename(filePath, ".vue");
+
+    const symbols: SymbolDoc[] = [
+      {
+        id: `${rel}#default`,
+        kind: "component",
+        name,
+        filePath: rel,
+        exported: true,
+        description: meta.description || undefined,
+        params: meta.props.map((p) =&gt; ({
+          name: p.name,
+          type: p.type,
+          description: p.description || undefined,
+        })),
+      },
+    ];
+
+    return symbols;
+  },
+
+  dispose() {
+    // Clean up the checker
+  },
+};
+
+export default plugin;</code></pre>
+    <div class="tip">
+      <p><strong>Tip:</strong> The <code>"component"</code> symbol kind is available specifically
+        for framework plugins that represent UI components as distinct from classes or functions.</p>
+    </div>
+
+    <h4>Lifecycle</h4>
+    <p>For each build (or rebuild in watch mode), the core calls plugin hooks in this order:</p>
+    <ol>
+      <li><code>init(context)</code> — set up any analysis tools, caches, or state</li>
+      <li><code>extract()</code> or <code>extractSymbols()</code> — called once per matching file</li>
+      <li><code>dispose()</code> — always called when extraction finishes, even if an error occurred</li>
+    </ol>
+
+    <h4>Validation rules</h4>
+    <p>When a plugin is loaded, armillary-mcp validates that it:</p>
+    <ul>
+      <li>Exports an object (as a default export or the module itself)</li>
+      <li>Has a non-empty <code>name</code> string</li>
+      <li>Has a non-empty <code>extensions</code> array where each entry starts with a dot</li>
+      <li>Implements at least one of <code>extract</code> or <code>extractSymbols</code></li>
+    </ul>
+    <p>If validation fails, the build aborts with a descriptive error message.</p>
+
+    <h4>Publishing a plugin</h4>
+    <p>Community plugins should follow the naming convention <code>armillary-mcp-plugin-&lt;name&gt;</code>
+      (e.g. <code>armillary-mcp-plugin-vue</code>). This makes them easy to discover. The package
+      should:</p>
+    <ul>
+      <li>Default-export an <code>ArmillaryPlugin</code> object</li>
+      <li>List <code>armillary-mcp</code> as a peer dependency</li>
+      <li>Import types only (<code>import type { ... }</code>) from <code>armillary-mcp</code> to avoid bundling it</li>
     </ul>
   </section>
 

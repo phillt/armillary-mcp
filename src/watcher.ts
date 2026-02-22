@@ -102,11 +102,21 @@ const IGNORED_PATTERNS = [
   /\.armillary-mcp-docs/,
 ];
 
-function shouldIgnore(filePath: string): boolean {
+function shouldIgnore(
+  filePath: string,
+  pluginExtensions?: Set<string>
+): boolean {
   if (IGNORED_PATTERNS.some((p) => p.test(filePath))) return true;
   // Only filter by extension if the path looks like a file (has an extension).
   // Directories must not be ignored so chokidar can traverse into them.
-  if (/\.\w+$/.test(filePath) && !/\.[tj]sx?$/.test(filePath)) return true;
+  if (/\.\w+$/.test(filePath)) {
+    if (/\.[tj]sx?$/.test(filePath)) return false;
+    if (pluginExtensions) {
+      const ext = filePath.slice(filePath.lastIndexOf(".")).toLowerCase();
+      if (pluginExtensions.has(ext)) return false;
+    }
+    return true;
+  }
   return false;
 }
 
@@ -123,6 +133,17 @@ export async function watchAndRegenerate(
   } = options;
 
   const pathsToWatch = watchPaths ?? [indexerOptions.projectRoot];
+
+  // Collect plugin extensions for the watcher
+  const pluginExtensions = new Set<string>();
+  if (indexerOptions.plugins) {
+    for (const plugin of indexerOptions.plugins) {
+      for (const ext of plugin.extensions) {
+        pluginExtensions.add(ext.toLowerCase());
+      }
+    }
+  }
+  const extSet = pluginExtensions.size > 0 ? pluginExtensions : undefined;
 
   // Initial build
   const initialIndex = await generateDocIndex(indexerOptions);
@@ -143,7 +164,7 @@ export async function watchAndRegenerate(
 
   const watcher = chokidar.watch(pathsToWatch, {
     ignoreInitial: true,
-    ignored: (filePath: string) => shouldIgnore(filePath),
+    ignored: (filePath: string) => shouldIgnore(filePath, extSet),
     awaitWriteFinish: { stabilityThreshold: 100, pollInterval: 50 },
     persistent: true,
   });
