@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import path from "node:path";
 import { generateDocIndex } from "./indexer.js";
 import { watchAndRegenerate } from "./watcher.js";
