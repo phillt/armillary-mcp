@@ -240,5 +240,17 @@
   </div>
 </footer>
 
+<script>
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var tabs = btn.closest('.tabs');
+    tabs.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+    tabs.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    btn.setAttribute('aria-selected', 'true');
+    tabs.querySelector('#tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+</script>
 </body>
 </html>
