@@ -8,3 +8,9 @@ export {
   type WatcherHandle,
   type BuildController,
 } from "./watcher.js";
+export {
+  loadDocIndex,
+  listSymbols,
+  getSymbol,
+  searchSymbols,
+} from "./server-handlers.js";
