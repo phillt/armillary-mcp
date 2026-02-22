@@ -1,0 +1,255 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-02-22T17:53:13.416Z",
+  "projectRoot": "/home/philllt/Projects/AI/project-mcp-docs",
+  "symbols": [
+    {
+      "id": "src/extractor.ts#extractFileSymbols",
+      "kind": "function",
+      "name": "extractFileSymbols",
+      "filePath": "src/extractor.ts",
+      "exported": true,
+      "signature": "export function extractFileSymbols(\n  sourceFile: SourceFile,\n  projectRoot: string\n): SymbolDoc[]",
+      "params": [
+        {
+          "name": "sourceFile",
+          "type": "SourceFile"
+        },
+        {
+          "name": "projectRoot",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "id": "src/indexer.ts#generateDocIndex",
+      "kind": "function",
+      "name": "generateDocIndex",
+      "filePath": "src/indexer.ts",
+      "exported": true,
+      "signature": "export async function generateDocIndex(\n  options: IndexerOptions\n): Promise<DocIndex>",
+      "params": [
+        {
+          "name": "options",
+          "type": "IndexerOptions"
+        }
+      ]
+    },
+    {
+      "id": "src/indexer.ts#IndexerOptions",
+      "kind": "interface",
+      "name": "IndexerOptions",
+      "filePath": "src/indexer.ts",
+      "exported": true,
+      "signature": "export interface IndexerOptions {\n  tsConfigFilePath: string;\n  projectRoot: string;\n  outputPath?: string;\n}"
+    },
+    {
+      "id": "src/jsdoc.ts#ExtractedJsDoc",
+      "kind": "interface",
+      "name": "ExtractedJsDoc",
+      "filePath": "src/jsdoc.ts",
+      "exported": true,
+      "signature": "export interface ExtractedJsDoc {\n  description?: string;\n  params?: ExtractedParam[];\n  returns?: { type?: string; description?: string };\n  tags?: Record<string, string>;\n}"
+    },
+    {
+      "id": "src/jsdoc.ts#ExtractedParam",
+      "kind": "interface",
+      "name": "ExtractedParam",
+      "filePath": "src/jsdoc.ts",
+      "exported": true,
+      "signature": "export interface ExtractedParam {\n  name: string;\n  type?: string;\n  description?: string;\n}"
+    },
+    {
+      "id": "src/jsdoc.ts#extractJsDoc",
+      "kind": "function",
+      "name": "extractJsDoc",
+      "filePath": "src/jsdoc.ts",
+      "exported": true,
+      "signature": "export function extractJsDoc(node: Node): ExtractedJsDoc | undefined",
+      "params": [
+        {
+          "name": "node",
+          "type": "Node"
+        }
+      ]
+    },
+    {
+      "id": "src/schema.ts#DocIndex",
+      "kind": "type",
+      "name": "DocIndex",
+      "filePath": "src/schema.ts",
+      "exported": true,
+      "signature": "export type DocIndex = z.infer<typeof DocIndexSchema>;"
+    },
+    {
+      "id": "src/schema.ts#DocIndexSchema",
+      "kind": "const",
+      "name": "DocIndexSchema",
+      "filePath": "src/schema.ts",
+      "exported": true,
+      "signature": "const DocIndexSchema: z.ZodObject<{ version: z.ZodString; generatedAt: z.ZodString; projectRoot: z.ZodString; symbols: z.ZodArray<z.ZodObject<{ id: z.ZodString; kind: z.ZodEnum<{ function: \"function\"; class: \"class\"; type: \"type\"; const: \"const\"; interface: \"interface\"; enum: \"enum\"; }>; name: z.ZodString; filePath: z.ZodString; exported: z.ZodBoolean; signature: z.ZodOptional<z.ZodString>; description: z.ZodOptional<z.ZodString>; params: z.ZodOptional<z.ZodArray<z.ZodObject<{ name: z.ZodString; type: z.ZodOptional<z.ZodString>; description: z.ZodOptional<z.ZodString>; }, z.core.$strip>>>; returns: z.ZodOptional<z.ZodObject<{ type: z.ZodOptional<z.ZodString>; description: z.ZodOptional<z.ZodString>; }, z.core.$strip>>; tags: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>; }, z.core.$strip>>; }, z.core.$strip>"
+    },
+    {
+      "id": "src/schema.ts#ParamSchema",
+      "kind": "const",
+      "name": "ParamSchema",
+      "filePath": "src/schema.ts",
+      "exported": true,
+      "signature": "const ParamSchema: z.ZodObject<{ name: z.ZodString; type: z.ZodOptional<z.ZodString>; description: z.ZodOptional<z.ZodString>; }, z.core.$strip>"
+    },
+    {
+      "id": "src/schema.ts#SymbolDoc",
+      "kind": "type",
+      "name": "SymbolDoc",
+      "filePath": "src/schema.ts",
+      "exported": true,
+      "signature": "export type SymbolDoc = z.infer<typeof SymbolDocSchema>;"
+    },
+    {
+      "id": "src/schema.ts#SymbolDocSchema",
+      "kind": "const",
+      "name": "SymbolDocSchema",
+      "filePath": "src/schema.ts",
+      "exported": true,
+      "signature": "const SymbolDocSchema: z.ZodObject<{ id: z.ZodString; kind: z.ZodEnum<{ function: \"function\"; class: \"class\"; type: \"type\"; const: \"const\"; interface: \"interface\"; enum: \"enum\"; }>; name: z.ZodString; filePath: z.ZodString; exported: z.ZodBoolean; signature: z.ZodOptional<z.ZodString>; description: z.ZodOptional<z.ZodString>; params: z.ZodOptional<z.ZodArray<z.ZodObject<{ name: z.ZodString; type: z.ZodOptional<z.ZodString>; description: z.ZodOptional<z.ZodString>; }, z.core.$strip>>>; returns: z.ZodOptional<z.ZodObject<{ type: z.ZodOptional<z.ZodString>; description: z.ZodOptional<z.ZodString>; }, z.core.$strip>>; tags: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>; }, z.core.$strip>"
+    },
+    {
+      "id": "src/server-handlers.ts#getSymbol",
+      "kind": "function",
+      "name": "getSymbol",
+      "filePath": "src/server-handlers.ts",
+      "exported": true,
+      "signature": "export function getSymbol(\n  index: DocIndex,\n  id: string\n): SymbolDoc | undefined",
+      "params": [
+        {
+          "name": "index",
+          "type": "DocIndex"
+        },
+        {
+          "name": "id",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "id": "src/server-handlers.ts#listSymbols",
+      "kind": "function",
+      "name": "listSymbols",
+      "filePath": "src/server-handlers.ts",
+      "exported": true,
+      "signature": "export function listSymbols(\n  index: DocIndex\n): Array<{ id: string; kind: string; name: string }>",
+      "params": [
+        {
+          "name": "index",
+          "type": "DocIndex"
+        }
+      ]
+    },
+    {
+      "id": "src/server-handlers.ts#loadDocIndex",
+      "kind": "function",
+      "name": "loadDocIndex",
+      "filePath": "src/server-handlers.ts",
+      "exported": true,
+      "signature": "export async function loadDocIndex(projectRoot: string): Promise<DocIndex>",
+      "params": [
+        {
+          "name": "projectRoot",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "id": "src/server-handlers.ts#searchSymbols",
+      "kind": "function",
+      "name": "searchSymbols",
+      "filePath": "src/server-handlers.ts",
+      "exported": true,
+      "signature": "export function searchSymbols(\n  index: DocIndex,\n  query: string,\n  limit?: number\n): SymbolDoc[]",
+      "params": [
+        {
+          "name": "index",
+          "type": "DocIndex"
+        },
+        {
+          "name": "query",
+          "type": "string"
+        },
+        {
+          "name": "limit",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "id": "src/signatures.ts#getSignature",
+      "kind": "function",
+      "name": "getSignature",
+      "filePath": "src/signatures.ts",
+      "exported": true,
+      "signature": "export function getSignature(\n  declaration: ExportedDeclarations\n): string | undefined",
+      "params": [
+        {
+          "name": "declaration",
+          "type": "ExportedDeclarations"
+        }
+      ]
+    },
+    {
+      "id": "src/watcher.ts#BuildController",
+      "kind": "interface",
+      "name": "BuildController",
+      "filePath": "src/watcher.ts",
+      "exported": true,
+      "signature": "export interface BuildController {\n  scheduleRebuild(): void;\n  waitForIdle(): Promise<void>;\n  getState(): \"idle\" | \"building\" | \"build_queued\";\n}"
+    },
+    {
+      "id": "src/watcher.ts#createBuildController",
+      "kind": "function",
+      "name": "createBuildController",
+      "filePath": "src/watcher.ts",
+      "exported": true,
+      "signature": "export function createBuildController(\n  buildFn: () => Promise<void>,\n  debounceMs: number\n): BuildController",
+      "params": [
+        {
+          "name": "buildFn",
+          "type": "() => Promise<void>"
+        },
+        {
+          "name": "debounceMs",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "id": "src/watcher.ts#watchAndRegenerate",
+      "kind": "function",
+      "name": "watchAndRegenerate",
+      "filePath": "src/watcher.ts",
+      "exported": true,
+      "signature": "export async function watchAndRegenerate(\n  options: WatcherOptions\n): Promise<WatcherHandle>",
+      "params": [
+        {
+          "name": "options",
+          "type": "WatcherOptions"
+        }
+      ]
+    },
+    {
+      "id": "src/watcher.ts#WatcherHandle",
+      "kind": "interface",
+      "name": "WatcherHandle",
+      "filePath": "src/watcher.ts",
+      "exported": true,
+      "signature": "export interface WatcherHandle {\n  close(): Promise<void>;\n  watcher: FSWatcher;\n}"
+    },
+    {
+      "id": "src/watcher.ts#WatcherOptions",
+      "kind": "interface",
+      "name": "WatcherOptions",
+      "filePath": "src/watcher.ts",
+      "exported": true,
+      "signature": "export interface WatcherOptions extends IndexerOptions {\n  debounceMs?: number;\n  watchPaths?: string[];\n  onBuildStart?: () => void;\n  onBuildComplete?: (symbolCount: number) => void;\n  onBuildError?: (error: unknown) => void;\n}"
+    }
+  ]
+}
