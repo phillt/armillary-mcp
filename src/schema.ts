@@ -16,7 +16,7 @@ export const SymbolDocSchema = z.object({
     description: z.string().optional(),
     params: z.array(ParamSchema).optional(),
     returns: z.object({ type: z.string().optional(), description: z.string().optional() }).optional(),
-    tags: z.record(z.string()).optional()
+    tags: z.record(z.string(), z.string()).optional()
 });
 
 export const DocIndexSchema = z.object({
