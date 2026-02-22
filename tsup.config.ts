@@ -11,4 +11,9 @@ export default defineConfig([
     format: ["esm"],
     banner: { js: "#!/usr/bin/env node" },
   },
+  {
+    entry: ["src/server.ts"],
+    format: ["esm"],
+    banner: { js: "#!/usr/bin/env node" },
+  },
 ]);
