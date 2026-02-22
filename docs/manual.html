@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manual — project-mcp-docs</title>
+  <meta name="description" content="Complete reference for project-mcp-docs: help AI coding assistants discover and reuse your existing TypeScript code via MCP.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="page-manual">
+
+<nav>
+  <div class="container">
+    <a href="index.html" class="brand">project-mcp-docs</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="manual.html" class="active">Manual</a>
+      <a href="https://github.com/philllt/project-mcp-docs">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <div class="manual-layout">
+
+    <!-- Table of Contents -->
+    <aside class="toc">
+      <nav class="toc-inner">
+        <h2>Contents</h2>
+        <ol>
+          <li><a href="#why">Why?</a></li>
+          <li><a href="#quick-setup">Quick Setup</a></li>
+          <li><a href="#agent-prompt-configuration">Agent Prompt Configuration</a></li>
+          <li><a href="#cli">CLI Usage</a></li>
+          <li><a href="#mcp-server-tools">MCP Server Tools</a></li>
+          <li><a href="#programmatic-api">Programmatic API</a></li>
+          <li><a href="#schema-reference">Schema Reference</a></li>
+          <li><a href="#configuration">Configuration</a></li>
+          <li><a href="#output-format">Output Format</a></li>
+        </ol>
+      </nav>
+    </aside>
+
+    <div class="manual-content">
+
+    <h1>Manual</h1>
+
+    <!-- Why -->
+  <section id="why">
+    <h2>Why?</h2>
+    <p>
+      AI coding assistants like Claude Code, Cursor, and Windsurf often duplicate existing utilities
+      because they lack visibility into the full codebase. A project might already have a
+      <code>formatDate</code> helper or a <code>retry</code> wrapper, but the agent can't see it
+      and writes a new one from scratch.
+    </p>
+    <p>
+      <strong>project-mcp-docs</strong> solves this by creating a searchable index of every exported
+      symbol in your TypeScript project — functions, classes, types, interfaces, enums, and constants —
+      complete with signatures and JSDoc descriptions.
+    </p>
+    <p>
+      The built-in MCP server lets agents query that index to find existing code before writing new code.
+      The agent uses <code>docs.list</code> to browse what's available, <code>docs.search</code> to find
+      relevant symbols, and <code>docs.get</code> to understand exactly how to use them.
+    </p>
+  </section>
+
+  <!-- Quick Setup -->
+  <section id="quick-setup">
+    <h2>Quick Setup</h2>
+
+    <p>
+      <strong>Prerequisites:</strong> Node.js &ge; 18 and a <code>tsconfig.json</code> in your project root.
+    </p>
+
+    <h3>1. Install</h3>
+    <pre><code>pnpm add -D project-mcp-docs</code></pre>
+    <p>Or with npm:</p>
+    <pre><code>npm install --save-dev project-mcp-docs</code></pre>
+    <p>You can also install globally with <code>pnpm add -g project-mcp-docs</code> or <code>npm install -g project-mcp-docs</code>.</p>
+
+    <h3>2. Build the index</h3>
+    <pre><code>npx mcp-docs build</code></pre>
+    <p>
+      This reads your <code>tsconfig.json</code>, extracts all exported symbols, and writes a
+      documentation index to <code>.mcp-docs/index.json</code>.
+    </p>
+
+    <h3>3. Connect your agent</h3>
+    <p>
+      Add the MCP server to your agent's configuration so it can query your project's documentation index.
+      The server communicates over <strong>stdio</strong> using the Model Context Protocol.
+    </p>
+
+    <div class="tabs">
+      <div class="tab-buttons" role="tablist">
+        <button class="tab-btn active" data-tab="claude-code" role="tab" aria-selected="true">Claude Code</button>
+        <button class="tab-btn" data-tab="cursor" role="tab" aria-selected="false">Cursor</button>
+        <button class="tab-btn" data-tab="windsurf" role="tab" aria-selected="false">Windsurf</button>
+        <button class="tab-btn" data-tab="vscode" role="tab" aria-selected="false">VS Code</button>
+        <button class="tab-btn" data-tab="zed" role="tab" aria-selected="false">Zed</button>
+        <button class="tab-btn" data-tab="cline" role="tab" aria-selected="false">Cline</button>
+        <button class="tab-btn" data-tab="claude-desktop" role="tab" aria-selected="false">Claude Desktop</button>
+        <button class="tab-btn" data-tab="other" role="tab" aria-selected="false">Other</button>
+      </div>
+
+      <div class="tab-panel active" id="tab-claude-code" role="tabpanel">
+        <p>Add a <code>.mcp.json</code> file to your project root:</p>
+        <pre><code>{
+  "mcpServers": {
+    "project-docs": {
+      "command": "npx",
+      "args": ["mcp-docs-server"]
+    }
+  }
+}</code></pre>
+        <p>This is the project-scoped config that can be shared via version control. You can also add it to <code>~/.claude.json</code> for user-level scope.</p>
+      </div>
+
+      <div class="tab-panel" id="tab-cursor" role="tabpanel">
+        <p>Add to <code>.cursor/mcp.json</code> in your project root:</p>
+        <pre><code>{
+  "mcpServers": {
+    "project-docs": {
+      "command": "npx",
+      "args": ["mcp-docs-server"]
+    }
+  }
+}</code></pre>
+        <p>For global availability across all projects, use <code>~/.cursor/mcp.json</code> instead.</p>
+      </div>
+
+      <div class="tab-panel" id="tab-windsurf" role="tabpanel">
+        <p>Add to <code>~/.codeium/windsurf/mcp_config.json</code> (Windsurf only supports global config):</p>
+        <pre><code>{
+  "mcpServers": {
+    "project-docs": {
+      "command": "npx",
+      "args": ["mcp-docs-server"]
+    }
+  }
+}</code></pre>
+      </div>
+
+      <div class="tab-panel" id="tab-vscode" role="tabpanel">
+        <p>Add to <code>.vscode/mcp.json</code> in your project root. Note: VS Code uses <code>servers</code> (not <code>mcpServers</code>) and requires an explicit <code>type</code> field:</p>
+        <pre><code>{
+  "servers": {
+    "project-docs": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["mcp-docs-server"]
+    }
+  }
+}</code></pre>
+      </div>
+
+      <div class="tab-panel" id="tab-zed" role="tabpanel">
+        <p>Add to <code>.zed/settings.json</code> in your project root. Note: Zed uses <code>context_servers</code> (not <code>mcpServers</code>):</p>
+        <pre><code>{
+  "context_servers": {
+    "project-docs": {
+      "command": "npx",
+      "args": ["mcp-docs-server"]
+    }
+  }
+}</code></pre>
+      </div>
+
+      <div class="tab-panel" id="tab-cline" role="tabpanel">
+        <p>Open the Cline MCP settings panel in VS Code, or edit the settings file directly. The config path varies by OS:</p>
+        <ul>
+          <li>macOS: <code>~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json</code></li>
+          <li>Linux: <code>~/.config/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json</code></li>
+        </ul>
+        <pre><code>{
+  "mcpServers": {
+    "project-docs": {
+      "command": "npx",
+      "args": ["mcp-docs-server"]
+    }
+  }
+}</code></pre>
+      </div>
+
+      <div class="tab-panel" id="tab-claude-desktop" role="tabpanel">
+        <p>Add to your <code>claude_desktop_config.json</code>:</p>
+        <ul>
+          <li>macOS: <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></li>
+          <li>Linux: <code>~/.config/Claude/claude_desktop_config.json</code></li>
+        </ul>
+        <pre><code>{
+  "mcpServers": {
+    "project-docs": {
+      "command": "npx",
+      "args": ["mcp-docs-server"],
+      "cwd": "/path/to/your/project"
+    }
+  }
+}</code></pre>
+        <p>Note: Claude Desktop requires a <code>cwd</code> field since it runs outside your project directory. Restart the app after saving.</p>
+      </div>
+
+      <div class="tab-panel" id="tab-other" role="tabpanel">
+        <p>
+          Any MCP-compatible client can connect to the server. Most clients use the <code>mcpServers</code> key
+          with <code>command</code> and <code>args</code> fields. Check your client's documentation for the
+          exact config file location and any differences in key names.
+        </p>
+      </div>
+    </div>
+
+    <h3>4. Keep the index current</h3>
+    <p>
+      During active development, run the watcher so your index stays up to date as you edit code:
+    </p>
+    <pre><code>npx mcp-docs watch</code></pre>
+  </section>
+
+  <!-- Agent Prompt Configuration -->
+  <section id="agent-prompt-configuration">
+    <h2>Agent Prompt Configuration</h2>
+
+    <p>
+      Connecting the MCP server gives your agent <em>access</em> to the documentation tools, but
+      you also want to <em>instruct</em> the agent to use them proactively. Adding a prompt snippet
+      to your agent's configuration ensures it checks the index before creating new code.
+    </p>
+
+    <div class="tabs">
+      <div class="tab-buttons" role="tablist">
+        <button class="tab-btn active" data-tab="prompt-claude-code" role="tab" aria-selected="true">Claude Code</button>
+        <button class="tab-btn" data-tab="prompt-cursor" role="tab" aria-selected="false">Cursor</button>
+        <button class="tab-btn" data-tab="prompt-windsurf" role="tab" aria-selected="false">Windsurf</button>
+        <button class="tab-btn" data-tab="prompt-vscode" role="tab" aria-selected="false">VS Code</button>
+        <button class="tab-btn" data-tab="prompt-zed" role="tab" aria-selected="false">Zed</button>
+        <button class="tab-btn" data-tab="prompt-cline" role="tab" aria-selected="false">Cline</button>
+        <button class="tab-btn" data-tab="prompt-other" role="tab" aria-selected="false">Other</button>
+      </div>
+
+      <div class="tab-panel active" id="tab-prompt-claude-code" role="tabpanel">
+        <p>Add the following to your project's <code>CLAUDE.md</code> (or <code>.claude/CLAUDE.md</code>):</p>
+        <pre><code>## Code Reuse
+
+Before creating new services, utilities, or helpers, use the project documentation tools to check if similar functionality already exists:
+
+1. Use `docs.search` with relevant keywords to find existing implementations
+2. Use `docs.get` to review the full signature and documentation of potential matches
+3. If a suitable symbol exists, reuse or extend it instead of creating a new one
+4. If nothing suitable exists, proceed with creating a new implementation
+
+This prevents duplicate services and keeps the codebase consistent.</code></pre>
+      </div>
+
+      <div class="tab-panel" id="tab-prompt-cursor" role="tabpanel">
+        <p>Create a rule file at <code>.cursor/rules/code-reuse.mdc</code>:</p>
+        <pre><code>---
+description: Check project documentation before creating new code
+globs:
+  - "src/**/*.ts"
+  - "src/**/*.tsx"
+---
+
+Before creating new services, utilities, or helpers, use the project documentation tools to check if similar functionality already exists:
+
+1. Use `docs.search` with relevant keywords to find existing implementations
+2. Use `docs.get` to review the full signature and documentation of potential matches
+3. If a suitable symbol exists, reuse or extend it instead of creating a new one
+4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
+      </div>
+
+      <div class="tab-panel" id="tab-prompt-windsurf" role="tabpanel">
+        <p>Create a rule file at <code>.windsurf/rules/code-reuse.md</code>:</p>
+        <pre><code>Before creating new services, utilities, or helpers, use the project documentation tools to check if similar functionality already exists:
+
+1. Use `docs.search` with relevant keywords to find existing implementations
+2. Use `docs.get` to review the full signature and documentation of potential matches
+3. If a suitable symbol exists, reuse or extend it instead of creating a new one
+4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
+        <p>Note: Windsurf rules have a 6,000 character limit per file.</p>
+      </div>
+
+      <div class="tab-panel" id="tab-prompt-vscode" role="tabpanel">
+        <p>Add to your project's <code>.github/copilot-instructions.md</code> (create the file if it doesn't exist):</p>
+        <pre><code>## Code Reuse
+
+Before creating new services, utilities, or helpers, use the project documentation tools to check if similar functionality already exists:
+
+1. Use `docs.search` with relevant keywords to find existing implementations
+2. Use `docs.get` to review the full signature and documentation of potential matches
+3. If a suitable symbol exists, reuse or extend it instead of creating a new one
+4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
+        <p>You can also create a targeted instruction file at <code>.github/instructions/code-reuse.instructions.md</code> with frontmatter to scope it to specific file patterns.</p>
+      </div>
+
+      <div class="tab-panel" id="tab-prompt-zed" role="tabpanel">
+        <p>Zed reads the first matching file from: <code>.rules</code>, <code>.cursorrules</code>, <code>AGENTS.md</code>, <code>CLAUDE.md</code>, and others. If you already have a <code>CLAUDE.md</code>, Zed will pick it up automatically. Otherwise, create a <code>.rules</code> file at your project root with the same content.</p>
+      </div>
+
+      <div class="tab-panel" id="tab-prompt-cline" role="tabpanel">
+        <p>Create a <code>.clinerules</code> file at your project root:</p>
+        <pre><code>## Code Reuse
+
+Before creating new services, utilities, or helpers, use the project documentation tools to check if similar functionality already exists:
+
+1. Use `docs.search` with relevant keywords to find existing implementations
+2. Use `docs.get` to review the full signature and documentation of potential matches
+3. If a suitable symbol exists, reuse or extend it instead of creating a new one
+4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
+      </div>
+
+      <div class="tab-panel" id="tab-prompt-other" role="tabpanel">
+        <p>
+          For any other agent that supports MCP, add a system-level instruction (in whatever format
+          your agent uses) that tells it to query <code>docs.search</code> before writing new code.
+          The key points to include:
+        </p>
+        <ul>
+          <li>Search the project documentation index before creating new services, utilities, or helpers</li>
+          <li>Use <code>docs.search</code> with relevant keywords to find existing implementations</li>
+          <li>Use <code>docs.get</code> to review full signatures and documentation of potential matches</li>
+          <li>Reuse or extend existing symbols instead of creating duplicates</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLI Usage -->
+  <section id="cli">
+    <h2>CLI Usage</h2>
+
+    <p>The <code>mcp-docs</code> binary provides two commands:</p>
+
+    <h3><code>mcp-docs build</code></h3>
+    <p>
+      Reads <code>tsconfig.json</code> from the current working directory, extracts all exported
+      symbols from your TypeScript source files, and writes a documentation index to
+      <code>.mcp-docs/index.json</code>. A summary of extracted symbols is printed to stdout.
+    </p>
+    <pre><code>$ npx mcp-docs build
+Documentation generated: 42 symbols
+  function: 18, class: 4, type: 8, interface: 6, const: 4, enum: 2</code></pre>
+
+    <h3><code>mcp-docs watch</code></h3>
+    <p>
+      Starts a file system watcher that monitors your project for <code>.ts</code> and
+      <code>.tsx</code> file changes. When a change is detected, the documentation index
+      is regenerated automatically. Changes are debounced with a 300ms delay.
+    </p>
+    <p>The watcher ignores:</p>
+    <ul>
+      <li><code>node_modules</code></li>
+      <li><code>dist</code></li>
+      <li><code>.d.ts</code> files</li>
+      <li><code>.mcp-docs</code> output directory</li>
+    </ul>
+    <pre><code>$ npx mcp-docs watch
+Watching for changes...
+[rebuild] 42 symbols
+[rebuild] 43 symbols</code></pre>
+    <p>Press <kbd>Ctrl+C</kbd> to stop. The watcher handles <code>SIGINT</code> and <code>SIGTERM</code> for graceful shutdown.</p>
+
+    <h3><code>mcp-docs</code> (no arguments)</h3>
+    <p>Prints usage help:</p>
+    <pre><code>Usage: mcp-docs &lt;command&gt;
+
+Commands:
+  build   Generate documentation index and exit
+  watch   Watch for changes and regenerate on save</code></pre>
+  </section>
+
+  <!-- MCP Server Tools -->
+  <section id="mcp-server-tools">
+    <h2>MCP Server Tools</h2>
+
+    <p>
+      AI coding assistants are the primary consumers of the MCP server. When connected, the agent
+      uses <code>docs.list</code> to browse available symbols, <code>docs.search</code> to find
+      relevant existing code, and <code>docs.get</code> to retrieve full details — signatures,
+      parameters, and descriptions — so it can reuse what's already in your codebase.
+    </p>
+
+    <h3>Starting the server</h3>
+    <pre><code>npx mcp-docs-server</code></pre>
+    <p>
+      The server communicates over <strong>stdio</strong> using the Model Context Protocol.
+      It reads the documentation index from <code>.mcp-docs/index.json</code>, so you must
+      run <code>mcp-docs build</code> (or <code>mcp-docs watch</code>) first.
+    </p>
+
+    <h3>Tool: <code>docs.list</code></h3>
+    <p>List all documented symbols. Returns an array of symbol summaries.</p>
+    <table>
+      <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td colspan="4"><em>No parameters</em></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Response example:</strong></p>
+    <pre><code>[
+  { "id": "src/indexer.ts#generateDocIndex", "kind": "function", "name": "generateDocIndex" },
+  { "id": "src/schema.ts#DocIndex", "kind": "type", "name": "DocIndex" }
+]</code></pre>
+
+    <h3>Tool: <code>docs.get</code></h3>
+    <p>Get the full documentation for a single symbol by its ID.</p>
+    <table>
+      <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>id</code></td><td>string</td><td>Yes</td><td>The symbol identifier (from <code>docs.list</code>)</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Response example:</strong></p>
+    <pre><code>{
+  "id": "src/indexer.ts#generateDocIndex",
+  "kind": "function",
+  "name": "generateDocIndex",
+  "filePath": "src/indexer.ts",
+  "exported": true,
+  "signature": "async function generateDocIndex(options: IndexerOptions): Promise&lt;DocIndex&gt;",
+  "description": "Generate a documentation index from a TypeScript project.",
+  "params": [
+    { "name": "options", "type": "IndexerOptions", "description": "Indexer configuration" }
+  ],
+  "returns": { "type": "Promise&lt;DocIndex&gt;", "description": "The generated documentation index" }
+}</code></pre>
+
+    <h3>Tool: <code>docs.search</code></h3>
+    <p>Search symbols by name or description (case-insensitive substring match).</p>
+    <table>
+      <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>q</code></td><td>string</td><td>Yes</td><td>Search query</td></tr>
+        <tr><td><code>limit</code></td><td>number</td><td>No</td><td>Max results (default: 10, max: 100)</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Response example:</strong></p>
+    <pre><code>[
+  {
+    "id": "src/indexer.ts#generateDocIndex",
+    "kind": "function",
+    "name": "generateDocIndex",
+    "filePath": "src/indexer.ts",
+    "exported": true,
+    "signature": "async function generateDocIndex(options: IndexerOptions): Promise&lt;DocIndex&gt;",
+    "description": "Generate a documentation index from a TypeScript project."
+  }
+]</code></pre>
+  </section>
+
+  <!-- Programmatic API -->
+  <section id="programmatic-api">
+    <h2>Programmatic API</h2>
+
+    <p>All public APIs are available from the package root:</p>
+    <pre><code>import {
+  generateDocIndex,
+  watchAndRegenerate,
+  createBuildController,
+  loadDocIndex,
+  listSymbols,
+  getSymbol,
+  searchSymbols,
+  DocIndexSchema,
+  SymbolDocSchema,
+} from "project-mcp-docs";</code></pre>
+
+    <h3><code>generateDocIndex(options)</code></h3>
+    <p>Generate a documentation index from a TypeScript project and write it to disk.</p>
+    <pre><code>import { generateDocIndex } from "project-mcp-docs";
+
+const index = await generateDocIndex({
+  tsConfigFilePath: "./tsconfig.json",
+  projectRoot: process.cwd(),
+  outputPath: ".mcp-docs/index.json", // optional, this is the default
+});</code></pre>
+
+    <p><strong><code>IndexerOptions</code></strong></p>
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>tsConfigFilePath</code></td><td>string</td><td>Yes</td><td>Path to tsconfig.json</td></tr>
+        <tr><td><code>projectRoot</code></td><td>string</td><td>Yes</td><td>Project root directory</td></tr>
+        <tr><td><code>outputPath</code></td><td>string</td><td>No</td><td>Output path (default: <code>.mcp-docs/index.json</code>)</td></tr>
+      </tbody>
+    </table>
+    <p>Returns: <code>Promise&lt;DocIndex&gt;</code></p>
+
+    <h3><code>watchAndRegenerate(options)</code></h3>
+    <p>Watch for file changes and regenerate the documentation index automatically.</p>
+    <pre><code>import { watchAndRegenerate } from "project-mcp-docs";
+
+const handle = await watchAndRegenerate({
+  tsConfigFilePath: "./tsconfig.json",
+  projectRoot: process.cwd(),
+  debounceMs: 300,
+  onBuildComplete: (count) =&gt; console.log(`Built: ${count} symbols`),
+  onBuildError: (err) =&gt; console.error("Build failed:", err),
+});
+
+// Later: stop watching
+await handle.close();</code></pre>
+
+    <p><strong><code>WatcherOptions</code></strong> (extends <code>IndexerOptions</code>)</p>
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>tsConfigFilePath</code></td><td>string</td><td>Yes</td><td>Path to tsconfig.json</td></tr>
+        <tr><td><code>projectRoot</code></td><td>string</td><td>Yes</td><td>Project root directory</td></tr>
+        <tr><td><code>outputPath</code></td><td>string</td><td>No</td><td>Output path</td></tr>
+        <tr><td><code>debounceMs</code></td><td>number</td><td>No</td><td>Debounce delay in ms (default: 300)</td></tr>
+        <tr><td><code>watchPaths</code></td><td>string[]</td><td>No</td><td>Paths to watch (default: [projectRoot])</td></tr>
+        <tr><td><code>onBuildStart</code></td><td>() =&gt; void</td><td>No</td><td>Called when a build starts</td></tr>
+        <tr><td><code>onBuildComplete</code></td><td>(count: number) =&gt; void</td><td>No</td><td>Called when a build completes</td></tr>
+        <tr><td><code>onBuildError</code></td><td>(error: unknown) =&gt; void</td><td>No</td><td>Called on build error</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong><code>WatcherHandle</code></strong></p>
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>close()</code></td><td>() =&gt; Promise&lt;void&gt;</td><td>Stop the watcher</td></tr>
+        <tr><td><code>watcher</code></td><td>FSWatcher</td><td>The underlying chokidar watcher</td></tr>
+      </tbody>
+    </table>
+
+    <h3><code>createBuildController(buildFn, debounceMs)</code></h3>
+    <p>Create a debounced build controller that queues rebuilds and prevents overlapping builds.</p>
+    <pre><code>import { createBuildController } from "project-mcp-docs";
+
+const controller = createBuildController(async () =&gt; {
+  // your build logic
+}, 300);
+
+controller.scheduleRebuild();
+await controller.waitForIdle();</code></pre>
+
+    <p><strong><code>BuildController</code></strong></p>
+    <table>
+      <thead><tr><th>Method</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>scheduleRebuild()</code></td><td>() =&gt; void</td><td>Schedule a rebuild (debounced)</td></tr>
+        <tr><td><code>waitForIdle()</code></td><td>() =&gt; Promise&lt;void&gt;</td><td>Wait for all pending builds to complete</td></tr>
+        <tr><td><code>getState()</code></td><td>() =&gt; string</td><td>Returns <code>"idle"</code>, <code>"building"</code>, or <code>"build_queued"</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3><code>loadDocIndex(projectRoot)</code></h3>
+    <p>Load and validate the documentation index from disk.</p>
+    <pre><code>import { loadDocIndex } from "project-mcp-docs";
+
+const index = await loadDocIndex(process.cwd());</code></pre>
+    <p>Reads <code>.mcp-docs/index.json</code> relative to the given project root. Throws if the file is missing or fails Zod validation.</p>
+
+    <h3><code>listSymbols(index)</code></h3>
+    <p>Return a summary array of all symbols in an index.</p>
+    <pre><code>import { loadDocIndex, listSymbols } from "project-mcp-docs";
+
+const index = await loadDocIndex(process.cwd());
+const symbols = listSymbols(index);
+// [{ id: "src/foo.ts#bar", kind: "function", name: "bar" }, ...]</code></pre>
+    <p>Returns: <code>Array&lt;{ id: string; kind: string; name: string }&gt;</code></p>
+
+    <h3><code>getSymbol(index, id)</code></h3>
+    <p>Look up a single symbol by its ID.</p>
+    <pre><code>const sym = getSymbol(index, "src/indexer.ts#generateDocIndex");
+if (sym) {
+  console.log(sym.signature);
+}</code></pre>
+    <p>Returns: <code>SymbolDoc | undefined</code></p>
+
+    <h3><code>searchSymbols(index, query, limit?)</code></h3>
+    <p>Search symbols by name or description (case-insensitive substring match).</p>
+    <pre><code>const results = searchSymbols(index, "generate", 5);</code></pre>
+    <p>The <code>limit</code> parameter is clamped between 1 and 100 (default: 10).</p>
+    <p>Returns: <code>SymbolDoc[]</code></p>
+
+    <h3>Zod Schemas</h3>
+    <p>Validation schemas are exported for use in your own code:</p>
+    <pre><code>import { DocIndexSchema, SymbolDocSchema } from "project-mcp-docs";
+
+const parsed = DocIndexSchema.parse(rawJson);</code></pre>
+  </section>
+
+  <!-- Schema Reference -->
+  <section id="schema-reference">
+    <h2>Schema Reference</h2>
+
+    <h3><code>DocIndex</code></h3>
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>version</code></td><td>string</td><td>Schema version</td></tr>
+        <tr><td><code>generatedAt</code></td><td>string</td><td>ISO 8601 timestamp</td></tr>
+        <tr><td><code>projectRoot</code></td><td>string</td><td>Absolute path to project root</td></tr>
+        <tr><td><code>symbols</code></td><td>SymbolDoc[]</td><td>Array of documented symbols</td></tr>
+      </tbody>
+    </table>
+
+    <h3><code>SymbolDoc</code></h3>
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>id</code></td><td>string</td><td>Yes</td><td>Stable identifier (<code>filePath#exportName</code>)</td></tr>
+        <tr><td><code>kind</code></td><td>string</td><td>Yes</td><td><code>"function"</code> | <code>"class"</code> | <code>"type"</code> | <code>"const"</code> | <code>"interface"</code> | <code>"enum"</code></td></tr>
+        <tr><td><code>name</code></td><td>string</td><td>Yes</td><td>Symbol name</td></tr>
+        <tr><td><code>filePath</code></td><td>string</td><td>Yes</td><td>Relative POSIX path from project root</td></tr>
+        <tr><td><code>exported</code></td><td>boolean</td><td>Yes</td><td>Whether the symbol is exported</td></tr>
+        <tr><td><code>signature</code></td><td>string</td><td>No</td><td>Full type signature</td></tr>
+        <tr><td><code>description</code></td><td>string</td><td>No</td><td>JSDoc description</td></tr>
+        <tr><td><code>params</code></td><td>Param[]</td><td>No</td><td>Function/method parameters</td></tr>
+        <tr><td><code>returns</code></td><td>object</td><td>No</td><td><code>{ type?: string, description?: string }</code></td></tr>
+        <tr><td><code>tags</code></td><td>Record&lt;string, string&gt;</td><td>No</td><td>Custom JSDoc tags</td></tr>
+      </tbody>
+    </table>
+
+    <h3><code>Param</code></h3>
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>name</code></td><td>string</td><td>Yes</td><td>Parameter name</td></tr>
+        <tr><td><code>type</code></td><td>string</td><td>No</td><td>Type annotation</td></tr>
+        <tr><td><code>description</code></td><td>string</td><td>No</td><td>JSDoc description</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Configuration -->
+  <section id="configuration">
+    <h2>Configuration</h2>
+    <p>
+      <strong>No configuration file is required.</strong> The tool reads your existing
+      <code>tsconfig.json</code> to discover source files.
+    </p>
+
+    <h3>Output path</h3>
+    <p>
+      By default, the documentation index is written to <code>.mcp-docs/index.json</code>
+      relative to the project root. You can override this with the <code>outputPath</code>
+      option in the programmatic API.
+    </p>
+
+    <h3>Excluded patterns</h3>
+    <p>The indexer processes all source files resolved by your <code>tsconfig.json</code>. To exclude files, use the <code>exclude</code> field in your tsconfig.</p>
+
+    <h3>Watcher ignore rules</h3>
+    <p>The <code>watch</code> command automatically ignores:</p>
+    <ul>
+      <li><code>node_modules/</code></li>
+      <li><code>dist/</code></li>
+      <li><code>*.d.ts</code> files</li>
+      <li><code>.mcp-docs/</code> output directory</li>
+    </ul>
+  </section>
+
+  <!-- Output Format -->
+  <section id="output-format">
+    <h2>Output Format</h2>
+    <p>The generated index is a single JSON file at <code>.mcp-docs/index.json</code>:</p>
+    <pre><code>{
+  "version": "1.0.0",
+  "generatedAt": "2026-02-21T12:00:00.000Z",
+  "projectRoot": "/home/user/my-project",
+  "symbols": [
+    {
+      "id": "src/math.ts#add",
+      "kind": "function",
+      "name": "add",
+      "filePath": "src/math.ts",
+      "exported": true,
+      "signature": "function add(a: number, b: number): number",
+      "description": "Add two numbers.",
+      "params": [
+        { "name": "a", "type": "number", "description": "First number" },
+        { "name": "b", "type": "number", "description": "Second number" }
+      ],
+      "returns": { "type": "number", "description": "The sum" }
+    }
+  ]
+}</code></pre>
+    <p>
+      <strong>Determinism guarantee:</strong> Symbols are sorted by <code>id</code>. Given the same
+      source files, the output (excluding <code>generatedAt</code>) is identical across runs.
+    </p>
+  </section>
+
+    </div><!-- /.manual-content -->
+  </div><!-- /.manual-layout -->
+</main>
+
+<footer>
+  <div class="container">
+    project-mcp-docs · ISC License
+  </div>
+</footer>
+
+<script>
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var tabs = btn.closest('.tabs');
+    tabs.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+    tabs.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    btn.setAttribute('aria-selected', 'true');
+    tabs.querySelector('#tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
