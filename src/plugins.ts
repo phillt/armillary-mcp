@@ -32,10 +32,25 @@ export async function loadPlugins(
 ): Promise<ArmillaryPlugin[]> {
   const plugins: ArmillaryPlugin[] = [];
 
+  const resolvedRoot = path.resolve(projectRoot);
+
   for (const name of names) {
-    const specifier = name.startsWith(".")
-      ? path.resolve(projectRoot, name)
-      : name;
+    let specifier: string;
+    if (name.startsWith(".")) {
+      const resolved = path.resolve(resolvedRoot, name);
+      const normalized = path.normalize(resolved);
+      const rootPrefix = resolvedRoot.endsWith(path.sep)
+        ? resolvedRoot
+        : resolvedRoot + path.sep;
+      if (normalized !== resolvedRoot && !normalized.startsWith(rootPrefix)) {
+        throw new Error(
+          `Plugin "${name}" resolves outside the project root: ${normalized}`
+        );
+      }
+      specifier = normalized;
+    } else {
+      specifier = name;
+    }
 
     let mod: unknown;
     try {
