@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { SymbolDoc } from "./schema.js";
+import { EXCLUDED_PATTERNS } from "./indexer.js";
 
 export interface PluginContext {
   projectRoot: string;
@@ -24,13 +25,6 @@ export interface ArmillaryPlugin {
     content: string
   ): Promise<SymbolDoc[]> | SymbolDoc[];
 }
-
-const EXCLUDED_PATTERNS = [
-  /node_modules/,
-  /\.next/,
-  /dist\//,
-  /\.d\.ts$/,
-];
 
 export async function loadPlugins(
   names: string[],
