@@ -2,9 +2,13 @@
   "name": "project-mcp-docs",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "type": "module",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsup src/index.ts --format esm --dts",
+    "generate": "tsx src/cli.ts",
+    "watch": "tsx src/cli.ts --watch",
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "",
@@ -13,7 +17,9 @@
   "devDependencies": {
     "@types/node": "^25.3.0",
     "tsup": "^8.5.1",
-    "typescript": "^5.9.3"
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
