@@ -148,3 +148,68 @@ export async function findPluginFiles(
   await walk(projectRoot);
   return results.sort();
 }
+
+/**
+ * Walk the directory tree once and bucket files by plugin index.
+ * Returns an array parallel to `plugins` — each element is the sorted file list for that plugin.
+ */
+export async function findAllPluginFiles(
+  projectRoot: string,
+  plugins: ArmillaryPlugin[],
+  excludePatterns: RegExp[] = EXCLUDED_PATTERNS
+): Promise<string[][]> {
+  // Build a map from lowercase extension → list of plugin indices that claim it
+  const extToPluginIndices = new Map<string, number[]>();
+  for (let i = 0; i < plugins.length; i++) {
+    for (const ext of plugins[i].extensions) {
+      const key = ext.toLowerCase();
+      let indices = extToPluginIndices.get(key);
+      if (!indices) {
+        indices = [];
+        extToPluginIndices.set(key, indices);
+      }
+      indices.push(i);
+    }
+  }
+
+  // One result bucket per plugin
+  const buckets: string[][] = plugins.map(() => []);
+
+  async function walk(dir: string): Promise<void> {
+    let entries;
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+
+      if (excludePatterns.some((p) => p.test(fullPath))) {
+        continue;
+      }
+
+      if (entry.isDirectory()) {
+        await walk(fullPath);
+      } else if (entry.isFile()) {
+        const ext = path.extname(entry.name).toLowerCase();
+        const indices = extToPluginIndices.get(ext);
+        if (indices) {
+          for (const idx of indices) {
+            buckets[idx].push(fullPath);
+          }
+        }
+      }
+    }
+  }
+
+  await walk(projectRoot);
+
+  // Sort each bucket for determinism
+  for (const bucket of buckets) {
+    bucket.sort();
+  }
+
+  return buckets;
+}

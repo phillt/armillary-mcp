@@ -316,11 +316,11 @@ const reactPlugin: ArmillaryPlugin = (() => {
         });
       }
 
-      // Reuse the core extractor
-      const symbols = extractFileSymbols(sourceFile, projectRoot!);
-
-      // Compute exported declarations once for all symbols in this file
+      // Compute exported declarations once — shared by extractor and post-processing
       const exportedDecls = sourceFile.getExportedDeclarations();
+
+      // Reuse the core extractor, passing pre-computed declarations to avoid a second AST walk
+      const symbols = extractFileSymbols(sourceFile, projectRoot!, exportedDecls);
 
       // Post-process: detect components and enrich metadata
       for (const sym of symbols) {

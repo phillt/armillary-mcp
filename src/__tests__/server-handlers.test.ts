@@ -5,6 +5,7 @@ import os from "node:os";
 import type { DocIndex, SymbolDoc } from "../schema.js";
 import {
   loadDocIndex,
+  buildIndex,
   listSymbols,
   getSymbol,
   searchSymbols,
@@ -399,5 +400,76 @@ describe("searchSymbols", () => {
   it("accepts a numeric limit for backward compatibility", () => {
     const results = searchSymbols(index, "add", 2);
     expect(results).toHaveLength(2);
+  });
+});
+
+// -- IndexedDocIndex (buildIndex) -------------------------------------------
+
+describe("buildIndex + indexed queries", () => {
+  const symbols = [
+    makeSymbol({ id: "a#add", name: "add", description: "Adds two numbers" }),
+    makeSymbol({
+      id: "b#subtract",
+      name: "subtract",
+      description: "Subtracts two numbers",
+    }),
+    makeSymbol({
+      id: "c#multiply",
+      name: "multiply",
+      description: "Multiplies values",
+    }),
+    makeSymbol({
+      id: "d#AddResult",
+      name: "AddResult",
+      kind: "type",
+      description: "Result of addition",
+    }),
+  ];
+
+  it("getSymbol returns O(1) result via symbolById map", () => {
+    const indexed = buildIndex(makeIndex(symbols));
+    expect(getSymbol(indexed, "a#add")).toEqual(symbols[0]);
+    expect(getSymbol(indexed, "c#multiply")).toEqual(symbols[2]);
+    expect(getSymbol(indexed, "nonexistent")).toBeUndefined();
+  });
+
+  it("searchSymbols uses pre-lowercased fields", () => {
+    const indexed = buildIndex(makeIndex(symbols));
+    const results = searchSymbols(indexed, "ADD");
+    expect(results.map((s) => s.name)).toContain("add");
+    expect(results.map((s) => s.name)).toContain("AddResult");
+  });
+
+  it("searchSymbols with kind filter works on indexed index", () => {
+    const indexed = buildIndex(makeIndex(symbols));
+    const results = searchSymbols(indexed, "add", { kind: "type" });
+    expect(results).toHaveLength(1);
+    expect(results[0].name).toBe("AddResult");
+  });
+
+  it("listSymbols works with indexed index", () => {
+    const indexed = buildIndex(makeIndex(symbols));
+    const result = listSymbols(indexed, { kind: "function" });
+    expect(result.symbols.map((s) => s.name)).toEqual(["add", "subtract", "multiply"]);
+    expect(result.totalFiltered).toBe(3);
+  });
+
+  it("buildIndex produces correct symbolById map", () => {
+    const indexed = buildIndex(makeIndex(symbols));
+    expect(indexed.symbolById.size).toBe(4);
+    for (const sym of symbols) {
+      expect(indexed.symbolById.get(sym.id)).toBe(sym);
+    }
+  });
+
+  it("buildIndex produces correct searchable array", () => {
+    const indexed = buildIndex(makeIndex(symbols));
+    expect(indexed.searchable).toHaveLength(4);
+    expect(indexed.searchable[0].nameLower).toBe("add");
+    expect(indexed.searchable[0].descLower).toBe("adds two numbers");
+    // Symbol with no description should have empty string
+    const noDescSymbols = [makeSymbol({ id: "x#foo", name: "Foo", description: undefined })];
+    const indexed2 = buildIndex(makeIndex(noDescSymbols));
+    expect(indexed2.searchable[0].descLower).toBe("");
   });
 });

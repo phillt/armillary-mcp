@@ -4,11 +4,10 @@ import fs from "node:fs/promises";
 import type { DocIndex, SymbolDoc } from "./schema.js";
 import { extractFileSymbols } from "./extractor.js";
 import type { ArmillaryPlugin } from "./plugins.js";
-import { findPluginFiles } from "./plugins.js";
+import { findAllPluginFiles } from "./plugins.js";
 import {
   loadCache,
   computeDiff,
-  writeCache,
   hashFileContents,
   toRelativePosixPath,
   CACHE_VERSION,
@@ -91,9 +90,6 @@ export async function generateDocIndex(
   // Create project with compiler options from tsconfig but skip loading all files upfront
   let project = createFreshProject(tsConfigFilePath);
 
-  // Filter out excluded paths (final sort is by symbol id at the end)
-  const filteredPaths = allFilePaths.filter((fp) => !isExcluded(fp));
-
   const allSymbols: SymbolDoc[] = [];
 
   // Collect plugin-claimed extensions so we skip ts-morph extraction for those files;
@@ -107,6 +103,11 @@ export async function generateDocIndex(
     }
   }
 
+  // Single pass: filter excluded paths and split into TS vs plugin-claimed files
+  const tsFiles = allFilePaths.filter(
+    (fp) => !isExcluded(fp) && !pluginClaimedExtensions.has(path.extname(fp).toLowerCase())
+  );
+
   // Load cache for incremental builds
   const pluginNames = plugins ? plugins.map((p) => p.name).sort() : [];
   const cacheResult: LoadCacheResult | null = incremental
@@ -117,9 +118,6 @@ export async function generateDocIndex(
 
   // New file entries map to build the updated cache
   const newFileEntries: Record<string, FileEntry> = {};
-
-  // Filter out plugin-claimed files so progress count is accurate
-  const tsFiles = filteredPaths.filter((fp) => !pluginClaimedExtensions.has(path.extname(fp).toLowerCase()));
 
   // Compute diff for TS files.
   // Note: computeDiff checks against the full cache (TS + plugin files). The `deleted`
@@ -134,7 +132,13 @@ export async function generateDocIndex(
       const entry = cache.files[relPath];
       if (entry) {
         allSymbols.push(...entry.symbols);
-        newFileEntries[relPath] = entry;
+        // Update mtimeMs if we got a fresh stat (handles "mtime changed but content same")
+        const freshMtime = tsDiff.mtimes.get(absPath);
+        if (freshMtime !== undefined && freshMtime !== entry.mtimeMs) {
+          newFileEntries[relPath] = { ...entry, mtimeMs: freshMtime };
+        } else {
+          newFileEntries[relPath] = entry;
+        }
       }
     }
   }
@@ -145,16 +149,17 @@ export async function generateDocIndex(
       project = createFreshProject(tsConfigFilePath);
     }
     const filePath = tsDiff.changed[i];
-    onProgress?.({ phase: "indexing", current: i + 1, total: tsDiff.changed.length, file: toRelativePosixPath(filePath, projectRoot) });
+    const relPath = toRelativePosixPath(filePath, projectRoot);
+    onProgress?.({ phase: "indexing", current: i + 1, total: tsDiff.changed.length, file: relPath });
     const sourceFile = project.addSourceFileAtPath(filePath);
     const symbols = extractFileSymbols(sourceFile, projectRoot);
     allSymbols.push(...symbols);
     project.removeSourceFile(sourceFile);
 
     // Store in cache entries — reuse hash from diff when available
-    const relPath = toRelativePosixPath(filePath, projectRoot);
     const contentHash = tsDiff.hashes.get(filePath) ?? await hashFileContents(filePath);
-    newFileEntries[relPath] = { contentHash, symbols };
+    const mtimeMs = tsDiff.mtimes.get(filePath) ?? (await fs.stat(filePath)).mtimeMs;
+    newFileEntries[relPath] = { contentHash, symbols, mtimeMs };
   }
 
   // Process plugins
@@ -172,12 +177,8 @@ export async function generateDocIndex(
         initializedPlugins.push(plugin);
       }
 
-      // Discover plugin files
-      const pluginFileLists: string[][] = [];
-      for (const plugin of plugins) {
-        const files = await findPluginFiles(projectRoot, plugin.extensions, EXCLUDED_PATTERNS);
-        pluginFileLists.push(files);
-      }
+      // Discover plugin files — single walk for all plugins
+      const pluginFileLists = await findAllPluginFiles(projectRoot, plugins, EXCLUDED_PATTERNS);
       const allPluginFiles = pluginFileLists.flat();
 
       // Compute diff for plugin files
@@ -190,9 +191,20 @@ export async function generateDocIndex(
           const entry = cache.files[relPath];
           if (entry) {
             allSymbols.push(...entry.symbols);
-            newFileEntries[relPath] = entry;
+            const freshMtime = pluginDiff.mtimes.get(absPath);
+            if (freshMtime !== undefined && freshMtime !== entry.mtimeMs) {
+              newFileEntries[relPath] = { ...entry, mtimeMs: freshMtime };
+            } else {
+              newFileEntries[relPath] = entry;
+            }
           }
         }
+      }
+
+      // Pre-compute relative paths for changed plugin files
+      const pluginRelPaths = new Map<string, string>();
+      for (const absPath of pluginDiff.changed) {
+        pluginRelPaths.set(absPath, toRelativePosixPath(absPath, projectRoot));
       }
 
       // Build a set of changed plugin files for quick lookup
@@ -220,9 +232,9 @@ export async function generateDocIndex(
           }
 
           pluginFileIndex++;
-          onProgress?.({ phase: "plugins", current: pluginFileIndex, total: totalChangedPluginFiles, file: toRelativePosixPath(filePath, projectRoot) });
+          const relativePath = pluginRelPaths.get(filePath)!;
+          onProgress?.({ phase: "plugins", current: pluginFileIndex, total: totalChangedPluginFiles, file: relativePath });
           const content = await fs.readFile(filePath, "utf-8");
-          const relativePath = toRelativePosixPath(filePath, projectRoot);
           const fileSymbols: SymbolDoc[] = [];
 
           if (plugin.extractSymbols) {
@@ -263,14 +275,16 @@ export async function generateDocIndex(
 
           // Store in cache entries, merging if multiple plugins process the same file
           const contentHash = pluginDiff.hashes.get(filePath) ?? await hashFileContents(filePath);
+          const mtimeMs = pluginDiff.mtimes.get(filePath) ?? (await fs.stat(filePath)).mtimeMs;
           const existingEntry = newFileEntries[relativePath];
           if (existingEntry) {
             newFileEntries[relativePath] = {
               contentHash,
               symbols: [...existingEntry.symbols, ...fileSymbols],
+              mtimeMs,
             };
           } else {
-            newFileEntries[relativePath] = { contentHash, symbols: fileSymbols };
+            newFileEntries[relativePath] = { contentHash, symbols: fileSymbols, mtimeMs };
           }
         }
       }
@@ -283,7 +297,7 @@ export async function generateDocIndex(
   }
 
   // Sort all symbols by id for determinism
-  allSymbols.sort((a, b) => a.id.localeCompare(b.id));
+  allSymbols.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 
   const docIndex: DocIndex = {
     version: indexVersion,
@@ -292,12 +306,13 @@ export async function generateDocIndex(
     symbols: allSymbols,
   };
 
-  // Write output (skip runtime validation — data is constructed by trusted code;
-  // read-side validation in server-handlers.ts covers deserialized data)
+  // Write output and cache in parallel (skip runtime validation — data is
+  // constructed by trusted code; read-side validation in server-handlers.ts
+  // covers deserialized data)
   await fs.mkdir(outputDir, { recursive: true });
-  await fs.writeFile(outputPath, JSON.stringify(docIndex, null, 2) + "\n");
-
-  // Write cache
+  const writes: Promise<void>[] = [
+    fs.writeFile(outputPath, JSON.stringify(docIndex, null, 2) + "\n"),
+  ];
   if (incremental) {
     const newManifest: CacheManifest = {
       cacheVersion: CACHE_VERSION,
@@ -306,8 +321,9 @@ export async function generateDocIndex(
       pluginNames,
       files: newFileEntries,
     };
-    await writeCache(cachePath, newManifest);
+    writes.push(fs.writeFile(cachePath, JSON.stringify(newManifest)));
   }
+  await Promise.all(writes);
 
   return docIndex;
 }

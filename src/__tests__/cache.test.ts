@@ -157,20 +157,36 @@ describe("loadCache", () => {
     expect(result).toBeNull();
   });
 
-  it("returns null for malformed structure", async () => {
+  it("returns null for malformed envelope (files is not an object)", async () => {
     await writeTsConfig();
-    // Valid JSON but files entry has wrong shape (missing symbols array)
-    const tsConfigHash = await hashFileContents(tsConfigPath());
     await fs.writeFile(
       cachePath(),
       JSON.stringify({
         cacheVersion: CACHE_VERSION,
         indexVersion: "1.0.0",
-        tsConfigHash,
+        tsConfigHash: "anything",
         pluginNames: [],
-        files: {
-          "src/foo.ts": { contentHash: "abc", symbols: "not-an-array" },
-        },
+        files: "not-an-object",
+      })
+    );
+    const result = await loadCache({
+      cachePath: cachePath(),
+      tsConfigFilePath: tsConfigPath(),
+      pluginNames: [],
+      indexVersion: "1.0.0",
+    });
+    expect(result).toBeNull();
+  });
+
+  it("returns null for malformed envelope (missing cacheVersion)", async () => {
+    await writeTsConfig();
+    await fs.writeFile(
+      cachePath(),
+      JSON.stringify({
+        indexVersion: "1.0.0",
+        tsConfigHash: "anything",
+        pluginNames: [],
+        files: {},
       })
     );
     const result = await loadCache({
@@ -326,6 +342,99 @@ describe("computeDiff parallel hashing", () => {
     for (let i = 50; i < 100; i++) {
       expect(changedSet.has(files[i])).toBe(true);
     }
+  });
+});
+
+describe("computeDiff mtime fast path", () => {
+  it("skips hashing when cached mtimeMs matches current stat", async () => {
+    const file = path.join(tmpDir, "stable.ts");
+    await fs.writeFile(file, "export const a = 1;");
+    const hash = await hashFileContents(file);
+    const stat = await fs.stat(file);
+
+    const cache: CacheManifest = {
+      cacheVersion: CACHE_VERSION,
+      indexVersion: "1.0.0",
+      tsConfigHash: "abc",
+      pluginNames: [],
+      files: {
+        "stable.ts": { contentHash: hash, symbols: [], mtimeMs: stat.mtimeMs },
+      },
+    };
+
+    const diff = await computeDiff([file], tmpDir, cache);
+
+    expect(diff.unchanged).toEqual([file]);
+    expect(diff.changed).toEqual([]);
+    // mtime fast path: no hash was computed (hashes map should be empty for this file)
+    expect(diff.hashes.has(file)).toBe(false);
+    // mtimes map should still have the stat value
+    expect(diff.mtimes.has(file)).toBe(true);
+    expect(diff.mtimes.get(file)).toBe(stat.mtimeMs);
+  });
+
+  it("falls back to hash when cached entry has no mtimeMs (old cache)", async () => {
+    const file = path.join(tmpDir, "old-cache.ts");
+    await fs.writeFile(file, "export const b = 2;");
+    const hash = await hashFileContents(file);
+
+    // Old cache entry without mtimeMs
+    const cache: CacheManifest = {
+      cacheVersion: CACHE_VERSION,
+      indexVersion: "1.0.0",
+      tsConfigHash: "abc",
+      pluginNames: [],
+      files: {
+        "old-cache.ts": { contentHash: hash, symbols: [] },
+      },
+    };
+
+    const diff = await computeDiff([file], tmpDir, cache);
+
+    expect(diff.unchanged).toEqual([file]);
+    expect(diff.changed).toEqual([]);
+    // Without mtimeMs, hash fallback was used
+    expect(diff.hashes.has(file)).toBe(true);
+    expect(diff.hashes.get(file)).toBe(hash);
+    // mtimes should still be populated from stat
+    expect(diff.mtimes.has(file)).toBe(true);
+  });
+
+  it("detects change when mtime differs and content differs", async () => {
+    const file = path.join(tmpDir, "changed-mtime.ts");
+    await fs.writeFile(file, "export const c = 3;");
+    const oldHash = await hashFileContents(file);
+
+    const cache: CacheManifest = {
+      cacheVersion: CACHE_VERSION,
+      indexVersion: "1.0.0",
+      tsConfigHash: "abc",
+      pluginNames: [],
+      files: {
+        "changed-mtime.ts": { contentHash: oldHash, symbols: [], mtimeMs: 1000 },
+      },
+    };
+
+    // Modify file content (mtime will also change)
+    await fs.writeFile(file, "export const c = 999;");
+
+    const diff = await computeDiff([file], tmpDir, cache);
+
+    expect(diff.changed).toEqual([file]);
+    expect(diff.unchanged).toEqual([]);
+    expect(diff.hashes.has(file)).toBe(true);
+    expect(diff.mtimes.has(file)).toBe(true);
+  });
+
+  it("returns mtimes map in DiffResult even with null cache", async () => {
+    const file = path.join(tmpDir, "no-cache.ts");
+    await fs.writeFile(file, "export const d = 4;");
+
+    const diff = await computeDiff([file], tmpDir, null);
+
+    expect(diff.mtimes).toBeInstanceOf(Map);
+    // No cache means no stat was performed
+    expect(diff.mtimes.size).toBe(0);
   });
 });
 
