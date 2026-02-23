@@ -99,8 +99,9 @@ export function getSymbol(
 export function searchSymbols(
   index: DocIndex,
   query: string,
-  limit?: number
+  options?: { kind?: string; limit?: number }
 ): SymbolDoc[] {
+  const { kind, limit } = options ?? {};
   const effectiveLimit = Math.max(1, Math.min(limit ?? 10, 100));
   const lowerQuery = query.toLowerCase();
   const results: SymbolDoc[] = [];
