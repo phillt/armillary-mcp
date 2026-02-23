@@ -2,6 +2,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { DocIndexSchema, type DocIndex, type SymbolDoc } from "./schema.js";
 
+function sanitizeInt(value: number | undefined, fallback: number): number {
+  if (value === undefined || !Number.isFinite(value)) return fallback;
+  return Math.trunc(value);
+}
+
 export async function loadDocIndex(projectRoot: string): Promise<DocIndex> {
   const indexPath = path.join(projectRoot, ".armillary-mcp-docs", "index.json");
 
