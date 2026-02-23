@@ -4,8 +4,6 @@ import type { ArmillaryPlugin, PluginContext } from "../plugins.js";
 import type { SymbolDoc } from "../schema.js";
 import { extractFileSymbols } from "../extractor.js";
 
-let project: Project | undefined;
-
 function isPascalCase(name: string): boolean {
   return /^[A-Z][a-zA-Z0-9]*$/.test(name);
 }
@@ -269,68 +267,77 @@ function resolveDefaultExportName(sourceFile: SourceFile): string | undefined {
   return undefined;
 }
 
-const reactPlugin: ArmillaryPlugin = {
-  name: "react",
-  extensions: [".tsx", ".jsx"],
+/**
+ * React plugin — scoped via IIFE to avoid module-level mutable state.
+ */
+const reactPlugin: ArmillaryPlugin = (() => {
+  let project: Project | undefined;
 
-  async init(context: PluginContext) {
-    project = new Project({
-      tsConfigFilePath: context.tsConfigFilePath,
-      skipAddingFilesFromTsConfig: false,
-    });
-  },
+  return {
+    name: "react",
+    extensions: [".tsx", ".jsx"],
 
-  async dispose() {
-    project = undefined;
-  },
-
-  extractSymbols(filePath: string, content: string): SymbolDoc[] {
-    if (!project) {
-      throw new Error("React plugin not initialized");
-    }
-
-    // Add or update the source file in the project
-    let sourceFile = project.getSourceFile(filePath);
-    if (sourceFile) {
-      sourceFile.replaceWithText(content);
-    } else {
-      sourceFile = project.createSourceFile(filePath, content, {
-        overwrite: true,
+    async init(context: PluginContext) {
+      project = new Project({
+        tsConfigFilePath: context.tsConfigFilePath,
+        skipAddingFilesFromTsConfig: false,
       });
-    }
+    },
 
-    const projectRoot = path.dirname(
-      project.getCompilerOptions().configFilePath as string
-    );
+    async dispose() {
+      project = undefined;
+    },
 
-    // Reuse the core extractor
-    const symbols = extractFileSymbols(sourceFile, projectRoot);
+    extractSymbols(filePath: string, content: string): SymbolDoc[] {
+      if (!project) {
+        throw new Error("React plugin not initialized");
+      }
 
-    // Post-process: detect components and enrich metadata
-    for (const sym of symbols) {
-      // Resolve default export names
-      if (sym.name === "default") {
-        const resolvedName = resolveDefaultExportName(sourceFile);
-        if (resolvedName) {
-          sym.name = resolvedName;
-          sym.id = `${sym.filePath}#${resolvedName}`;
+      // Add or update the source file in the project
+      let sourceFile = project.getSourceFile(filePath);
+      if (sourceFile) {
+        sourceFile.replaceWithText(content);
+      } else {
+        sourceFile = project.createSourceFile(filePath, content, {
+          overwrite: true,
+        });
+      }
+
+      const configPath = project.getCompilerOptions().configFilePath;
+      if (!configPath) {
+        throw new Error("React plugin: could not resolve tsconfig path");
+      }
+      const projectRoot = path.dirname(configPath as string);
+
+      // Reuse the core extractor
+      const symbols = extractFileSymbols(sourceFile, projectRoot);
+
+      // Post-process: detect components and enrich metadata
+      for (const sym of symbols) {
+        // Resolve default export names
+        if (sym.name === "default") {
+          const resolvedName = resolveDefaultExportName(sourceFile);
+          if (resolvedName) {
+            sym.name = resolvedName;
+            sym.id = `${sym.filePath}#${resolvedName}`;
+          }
+        }
+
+        // Detect and upgrade React components
+        if (isReactComponent(sym, sourceFile)) {
+          sym.kind = "component";
+
+          // Extract props
+          const props = extractProps(sym, sourceFile);
+          if (props) {
+            sym.params = props;
+          }
         }
       }
 
-      // Detect and upgrade React components
-      if (isReactComponent(sym, sourceFile)) {
-        (sym as { kind: string }).kind = "component";
-
-        // Extract props
-        const props = extractProps(sym, sourceFile);
-        if (props) {
-          sym.params = props;
-        }
-      }
-    }
-
-    return symbols;
-  },
-};
+      return symbols;
+    },
+  };
+})();
 
 export default reactPlugin;
