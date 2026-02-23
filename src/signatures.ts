@@ -104,7 +104,7 @@ function getVariableSignature(decl: VariableDeclaration): string {
   try {
     const typeText = decl.getType().getText(decl);
     // If type resolution produced an import-path string, it's not useful
-    if (typeText && !typeText.startsWith("import(")) {
+    if (typeText && !typeText.includes("import(")) {
       return `const ${name}: ${typeText}`;
     }
   } catch {
