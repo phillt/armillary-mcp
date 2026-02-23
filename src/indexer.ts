@@ -93,12 +93,13 @@ export async function generateDocIndex(
     }
   }
 
+  // Filter out plugin-claimed files so progress count is accurate
+  const tsFiles = filteredPaths.filter((fp) => !pluginClaimedExtensions.has(path.extname(fp).toLowerCase()));
+
   // Process files one at a time to avoid loading all ASTs into memory
-  for (let i = 0; i < filteredPaths.length; i++) {
-    const filePath = filteredPaths[i];
-    const ext = path.extname(filePath).toLowerCase();
-    if (pluginClaimedExtensions.has(ext)) continue;
-    onProgress?.({ phase: "indexing", current: i + 1, total: filteredPaths.length, file: toRelativePosixPath(filePath, projectRoot) });
+  for (let i = 0; i < tsFiles.length; i++) {
+    const filePath = tsFiles[i];
+    onProgress?.({ phase: "indexing", current: i + 1, total: tsFiles.length, file: toRelativePosixPath(filePath, projectRoot) });
     const sourceFile = project.addSourceFileAtPath(filePath);
     const symbols = extractFileSymbols(sourceFile, projectRoot);
     allSymbols.push(...symbols);
