@@ -49,7 +49,7 @@ async function main() {
         .optional(),
       pathPrefix: z.string().optional(),
       cursor: z.string().optional(),
-      limit: z.number().optional(),
+      limit: z.number().int().min(1).max(200).optional(),
     },
     { annotations: toolAnnotations },
     ({ kind, pathPrefix, cursor, limit }, _extra) => ({
@@ -105,7 +105,7 @@ async function main() {
           "component",
         ])
         .optional(),
-      limit: z.number().optional(),
+      limit: z.number().int().min(1).max(100).optional(),
     },
     { annotations: toolAnnotations },
     ({ q, kind, limit }, _extra) => ({
