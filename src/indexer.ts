@@ -6,11 +6,19 @@ import { extractFileSymbols } from "./extractor.js";
 import type { ArmillaryPlugin } from "./plugins.js";
 import { findPluginFiles } from "./plugins.js";
 
+export interface ProgressInfo {
+  phase: string;
+  current: number;
+  total: number;
+  file?: string;
+}
+
 export interface IndexerOptions {
   tsConfigFilePath: string;
   projectRoot: string;
   outputPath?: string;
   plugins?: ArmillaryPlugin[];
+  onProgress?: (info: ProgressInfo) => void;
 }
 
 export const EXCLUDED_PATTERNS = [
@@ -32,7 +40,7 @@ function toRelativePosixPath(filePath: string, projectRoot: string): string {
 export async function generateDocIndex(
   options: IndexerOptions
 ): Promise<DocIndex> {
-  const { tsConfigFilePath, projectRoot, plugins } = options;
+  const { tsConfigFilePath, projectRoot, plugins, onProgress } = options;
   const outputPath =
     options.outputPath ?? path.join(projectRoot, ".armillary-mcp-docs", "index.json");
 
@@ -85,10 +93,13 @@ export async function generateDocIndex(
     }
   }
 
+  // Filter out plugin-claimed files so progress count is accurate
+  const tsFiles = filteredPaths.filter((fp) => !pluginClaimedExtensions.has(path.extname(fp).toLowerCase()));
+
   // Process files one at a time to avoid loading all ASTs into memory
-  for (const filePath of filteredPaths) {
-    const ext = path.extname(filePath).toLowerCase();
-    if (pluginClaimedExtensions.has(ext)) continue;
+  for (let i = 0; i < tsFiles.length; i++) {
+    const filePath = tsFiles[i];
+    onProgress?.({ phase: "indexing", current: i + 1, total: tsFiles.length, file: toRelativePosixPath(filePath, projectRoot) });
     const sourceFile = project.addSourceFileAtPath(filePath);
     const symbols = extractFileSymbols(sourceFile, projectRoot);
     allSymbols.push(...symbols);
@@ -102,19 +113,28 @@ export async function generateDocIndex(
 
     try {
       // Initialize all plugins, tracking which ones succeed
-      for (const plugin of plugins) {
+      for (let i = 0; i < plugins.length; i++) {
+        const plugin = plugins[i];
         await plugin.init?.(pluginContext);
         initializedPlugins.push(plugin);
       }
 
+      let pluginFileIndex = 0;
+      // Count total plugin files for progress reporting
+      const pluginFileLists: string[][] = [];
       for (const plugin of plugins) {
-        const files = await findPluginFiles(
-          projectRoot,
-          plugin.extensions,
-          EXCLUDED_PATTERNS
-        );
+        const files = await findPluginFiles(projectRoot, plugin.extensions, EXCLUDED_PATTERNS);
+        pluginFileLists.push(files);
+      }
+      const totalPluginFiles = pluginFileLists.reduce((sum, f) => sum + f.length, 0);
+
+      for (let pi = 0; pi < plugins.length; pi++) {
+        const plugin = plugins[pi];
+        const files = pluginFileLists[pi];
 
         for (const filePath of files) {
+          pluginFileIndex++;
+          onProgress?.({ phase: "plugins", current: pluginFileIndex, total: totalPluginFiles, file: toRelativePosixPath(filePath, projectRoot) });
           const content = await fs.readFile(filePath, "utf-8");
 
           if (plugin.extractSymbols) {

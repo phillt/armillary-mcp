@@ -1,6 +1,6 @@
 import path from "node:path";
 import fs from "node:fs/promises";
-import { generateDocIndex } from "./indexer.js";
+import { generateDocIndex, type ProgressInfo } from "./indexer.js";
 import { watchAndRegenerate } from "./watcher.js";
 import { loadPlugins, type ArmillaryPlugin } from "./plugins.js";
 
@@ -60,7 +60,26 @@ async function runBuild(): Promise<void> {
   console.log(`  tsconfig: ${tsConfigFilePath}`);
 
   const plugins = await resolvePlugins(projectRoot);
-  const index = await generateDocIndex({ tsConfigFilePath, projectRoot, plugins });
+
+  let onProgress: ((info: ProgressInfo) => void) | undefined;
+  if (process.stdout.isTTY) {
+    onProgress = (info: ProgressInfo) => {
+      const cols = process.stdout.columns || 80;
+      const label = info.phase === "indexing" ? "Indexing" : "Plugins";
+      const prefix = `  ${label} [${info.current}/${info.total}] `;
+      const file = info.file ?? "";
+      const maxFileLen = cols - prefix.length;
+      const truncatedFile = maxFileLen < 4 ? "" : file.length > maxFileLen ? "..." + file.slice(-(maxFileLen - 3)) : file;
+      const line = prefix + truncatedFile;
+      process.stdout.write(`\r${line.padEnd(cols)}`);
+    };
+  }
+
+  const index = await generateDocIndex({ tsConfigFilePath, projectRoot, plugins, onProgress });
+
+  if (process.stdout.isTTY) {
+    process.stdout.write("\n");
+  }
 
   console.log(`\nGenerated index with ${index.symbols.length} symbols:`);
   for (const sym of index.symbols) {

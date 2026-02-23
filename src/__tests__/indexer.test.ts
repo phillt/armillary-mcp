@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
@@ -185,5 +185,130 @@ export type NumberPair = [number, number];
     const names = index.symbols.map((s) => s.name);
     // a.ts comes before z.ts, and within a.ts alpha comes before beta
     expect(names).toEqual(["alpha", "beta", "zeta"]);
+  });
+
+  it("calls onProgress with monotonically increasing indexing events", async () => {
+    await fs.writeFile(
+      path.join(tmpDir, "src", "a.ts"),
+      `export function alpha() {}`
+    );
+    await fs.writeFile(
+      path.join(tmpDir, "src", "b.ts"),
+      `export function beta() {}`
+    );
+
+    const onProgress = vi.fn();
+
+    await generateDocIndex({
+      tsConfigFilePath: path.join(tmpDir, "tsconfig.json"),
+      projectRoot: tmpDir,
+      onProgress,
+    });
+
+    expect(onProgress).toHaveBeenCalled();
+
+    const calls = onProgress.mock.calls.map((c) => c[0]);
+    const indexingCalls = calls.filter((c) => c.phase === "indexing");
+
+    expect(indexingCalls.length).toBe(2);
+
+    // current increases monotonically from 1..N
+    const currents = indexingCalls.map((c) => c.current);
+    expect(currents).toEqual([1, 2]);
+
+    // total is consistent across all calls
+    const totals = new Set(indexingCalls.map((c) => c.total));
+    expect(totals.size).toBe(1);
+    expect(totals.has(2)).toBe(true);
+
+    // last call's current equals total
+    expect(indexingCalls[indexingCalls.length - 1].current).toBe(
+      indexingCalls[indexingCalls.length - 1].total
+    );
+
+    // each call includes a file string
+    for (const call of indexingCalls) {
+      expect(typeof call.file).toBe("string");
+      expect(call.file.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("calls onProgress with plugin phase events when plugins are used", async () => {
+    await fs.writeFile(
+      path.join(tmpDir, "src", "main.ts"),
+      `export function hello() {}`
+    );
+    await fs.writeFile(
+      path.join(tmpDir, "src", "Widget.custom"),
+      "<custom>content</custom>"
+    );
+    await fs.writeFile(
+      path.join(tmpDir, "src", "Other.custom"),
+      "<custom>other</custom>"
+    );
+
+    // Update tsconfig to include src directory
+    await fs.writeFile(
+      path.join(tmpDir, "tsconfig.json"),
+      JSON.stringify({
+        compilerOptions: {
+          target: "ES2022",
+          module: "ESNext",
+          moduleResolution: "Bundler",
+          strict: true,
+        },
+        include: ["src"],
+      })
+    );
+
+    const plugin = {
+      name: "custom-plugin",
+      extensions: [".custom"],
+      extractSymbols: (filePath: string) => {
+        const name = path.basename(filePath, ".custom");
+        return [
+          {
+            id: `${name}.custom#default`,
+            kind: "component" as const,
+            name,
+            filePath: `${name}.custom`,
+            exported: true,
+          },
+        ];
+      },
+    };
+
+    const onProgress = vi.fn();
+
+    await generateDocIndex({
+      tsConfigFilePath: path.join(tmpDir, "tsconfig.json"),
+      projectRoot: tmpDir,
+      plugins: [plugin],
+      onProgress,
+    });
+
+    const calls = onProgress.mock.calls.map((c) => c[0]);
+    const indexingCalls = calls.filter((c) => c.phase === "indexing");
+    const pluginCalls = calls.filter((c) => c.phase === "plugins");
+
+    // Should have indexing calls for .ts files
+    expect(indexingCalls.length).toBeGreaterThan(0);
+
+    // Should have plugin calls for .custom files
+    expect(pluginCalls.length).toBe(2);
+
+    // Plugin calls have their own monotonic current/total sequence
+    const pluginCurrents = pluginCalls.map((c) => c.current);
+    expect(pluginCurrents).toEqual([1, 2]);
+
+    const pluginTotals = new Set(pluginCalls.map((c) => c.total));
+    expect(pluginTotals.size).toBe(1);
+    expect(pluginTotals.has(2)).toBe(true);
+
+    // Each plugin call includes a file string
+    for (const call of pluginCalls) {
+      expect(typeof call.file).toBe("string");
+      expect(call.file.length).toBeGreaterThan(0);
+    }
   });
 });
