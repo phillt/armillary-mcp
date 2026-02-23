@@ -623,6 +623,68 @@ describe("generateDocIndex with plugins", () => {
     expect(dispose2).not.toHaveBeenCalled();
   });
 
+  it("plugin batch disposal re-initializes plugins at batch boundaries", async () => {
+    // Create enough plugin files to trigger batch boundary at batchSize=2
+    for (let i = 0; i < 5; i++) {
+      await fs.writeFile(path.join(tmpDir, `comp${i}.custom`), `<custom>${i}</custom>`);
+    }
+
+    const initFn = vi.fn();
+    const disposeFn = vi.fn();
+    let initCount = 0;
+
+    const plugin: ArmillaryPlugin = {
+      name: "batch-test",
+      extensions: [".custom"],
+      init: (ctx) => {
+        initFn(ctx);
+        initCount++;
+      },
+      dispose: () => {
+        disposeFn();
+      },
+      extractSymbols: (filePath) => {
+        const name = path.basename(filePath, ".custom");
+        return [
+          {
+            id: `${name}.custom#default`,
+            kind: "component" as const,
+            name,
+            filePath: `${name}.custom`,
+            exported: true,
+          },
+        ];
+      },
+    };
+
+    const index = await generateDocIndex({
+      tsConfigFilePath: path.join(tmpDir, "tsconfig.json"),
+      projectRoot: tmpDir,
+      outputPath: path.join(tmpDir, "out.json"),
+      plugins: [plugin],
+      batchSize: 2,
+      incremental: false,
+    });
+
+    // All 5 plugin files + main.ts should be indexed
+    expect(index.symbols.length).toBeGreaterThanOrEqual(5);
+    const pluginSymbols = index.symbols.filter((s) => s.kind === "component");
+    expect(pluginSymbols).toHaveLength(5);
+
+    // init: 1 initial + 2 re-inits (at file indices 2 and 4) = 3 calls
+    // dispose: 2 batch-boundary disposes + 1 final dispose = 3 calls
+    // (The exact counts depend on how many batch boundaries are crossed.
+    //  With 5 files and batchSize=2: boundaries at index 2 and 4.)
+    expect(initFn.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(disposeFn.mock.calls.length).toBeGreaterThanOrEqual(2);
+
+    // Each re-init should receive a context with the project
+    for (const call of initFn.mock.calls) {
+      expect(call[0]).toHaveProperty("projectRoot", tmpDir);
+      expect(call[0]).toHaveProperty("tsConfigFilePath");
+    }
+  });
+
   it("symbols are sorted by id for determinism", async () => {
     await fs.writeFile(path.join(tmpDir, "z.custom"), "");
     await fs.writeFile(path.join(tmpDir, "a.custom"), "");
