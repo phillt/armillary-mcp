@@ -112,6 +112,11 @@ describe("encodeCursor / decodeCursor", () => {
     const bad = Buffer.from(JSON.stringify({ o: -5 })).toString("base64url");
     expect(decodeCursor(bad)).toBe(0);
   });
+
+  it("returns 0 for fractional offset in cursor", () => {
+    const bad = Buffer.from(JSON.stringify({ o: 2.5 })).toString("base64url");
+    expect(decodeCursor(bad)).toBe(0);
+  });
 });
 
 // -- listSymbols ------------------------------------------------------------
@@ -249,6 +254,26 @@ describe("listSymbols", () => {
     expect(result.symbols).toHaveLength(1);
   });
 
+  it("falls back to default limit when given NaN", () => {
+    const symbols = Array.from({ length: 75 }, (_, i) =>
+      makeSymbol({ id: `s#sym${i}`, name: `sym${i}` })
+    );
+    const index = makeIndex(symbols);
+
+    const result = listSymbols(index, { limit: NaN });
+    expect(result.symbols).toHaveLength(50);
+  });
+
+  it("truncates float limit to integer", () => {
+    const symbols = Array.from({ length: 20 }, (_, i) =>
+      makeSymbol({ id: `s#sym${i}`, name: `sym${i}` })
+    );
+    const index = makeIndex(symbols);
+
+    const result = listSymbols(index, { limit: 5.9 });
+    expect(result.symbols).toHaveLength(5);
+  });
+
   it("invalid cursor gracefully returns first page", () => {
     const symbols = Array.from({ length: 10 }, (_, i) =>
       makeSymbol({ id: `s#sym${i}`, name: `sym${i}` })
@@ -369,5 +394,10 @@ describe("searchSymbols", () => {
   it("kind alone without matching text returns nothing", () => {
     const results = searchSymbols(index, "zzzznotfound", { kind: "function" });
     expect(results).toEqual([]);
+  });
+
+  it("accepts a numeric limit for backward compatibility", () => {
+    const results = searchSymbols(index, "add", 2);
+    expect(results).toHaveLength(2);
   });
 });
