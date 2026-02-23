@@ -130,6 +130,9 @@ export async function generateDocIndex(
               }
             }
             allSymbols.push(...symbols);
+            // Release the source file to free memory
+            const sf = project.getSourceFile(filePath);
+            if (sf) project.removeSourceFile(sf);
           } else if (plugin.extract) {
             const tsCode = plugin.extract(filePath, content);
             if (tsCode) {
