@@ -48,7 +48,7 @@ describe("hashFileContents", () => {
 });
 
 describe("computeDiff", () => {
-  it("with null cache, all files are changed", async () => {
+  it("with null cache, all files are changed and hashes map is empty", async () => {
     const file1 = path.join(tmpDir, "a.ts");
     const file2 = path.join(tmpDir, "b.ts");
     await fs.writeFile(file1, "export const a = 1;");
@@ -59,6 +59,8 @@ describe("computeDiff", () => {
     expect(diff.changed).toEqual([file1, file2]);
     expect(diff.unchanged).toEqual([]);
     expect(diff.deleted).toEqual([]);
+    // No cache means no hashing was performed
+    expect(diff.hashes.size).toBe(0);
   });
 
   it("correctly classifies changed, unchanged, deleted, and new files", async () => {
@@ -96,6 +98,16 @@ describe("computeDiff", () => {
     expect(diff.unchanged).toEqual([unchangedFile]);
     expect(diff.changed.sort()).toEqual([changedFile, newFile].sort());
     expect(diff.deleted).toEqual(["deleted.ts"]);
+
+    // Hashes should contain entries for files that were hashed (cached files only)
+    // New files (not in cache) are not hashed during diff
+    expect(diff.hashes.has(unchangedFile)).toBe(true);
+    expect(diff.hashes.has(changedFile)).toBe(true);
+    // newFile was not in cache so it was never hashed
+    expect(diff.hashes.has(newFile)).toBe(false);
+    // Hashes should be valid SHA-256 hex strings
+    expect(diff.hashes.get(unchangedFile)).toMatch(/^[a-f0-9]{64}$/);
+    expect(diff.hashes.get(changedFile)).toMatch(/^[a-f0-9]{64}$/);
   });
 });
 
@@ -267,6 +279,53 @@ describe("loadCache", () => {
     expect(loaded).not.toBeNull();
     expect(loaded!.manifest).toEqual(manifest);
     expect(loaded!.tsConfigHash).toBe(tsConfigHash);
+  });
+});
+
+describe("computeDiff parallel hashing", () => {
+  it("correctly classifies many files with parallel hashing", async () => {
+    // Create 100 files
+    const files: string[] = [];
+    for (let i = 0; i < 100; i++) {
+      const filePath = path.join(tmpDir, `file${i}.ts`);
+      await fs.writeFile(filePath, `export const x${i} = ${i};`);
+      files.push(filePath);
+    }
+
+    // Hash the first 50 files to build a cache
+    const cacheFiles: Record<string, { contentHash: string; symbols: [] }> = {};
+    for (let i = 0; i < 50; i++) {
+      const relPath = `file${i}.ts`;
+      const hash = await hashFileContents(files[i]);
+      cacheFiles[relPath] = { contentHash: hash, symbols: [] };
+    }
+
+    const cache: CacheManifest = {
+      cacheVersion: CACHE_VERSION,
+      indexVersion: "1.0.0",
+      tsConfigHash: "abc",
+      pluginNames: [],
+      files: cacheFiles,
+    };
+
+    const diff = await computeDiff(files, tmpDir, cache);
+
+    // First 50 should be unchanged (hashes match)
+    expect(diff.unchanged.length).toBe(50);
+    // Last 50 should be changed (not in cache)
+    expect(diff.changed.length).toBe(50);
+    expect(diff.deleted).toEqual([]);
+
+    // Verify the unchanged files are the first 50
+    const unchangedSet = new Set(diff.unchanged);
+    for (let i = 0; i < 50; i++) {
+      expect(unchangedSet.has(files[i])).toBe(true);
+    }
+    // Verify the changed files are the last 50
+    const changedSet = new Set(diff.changed);
+    for (let i = 50; i < 100; i++) {
+      expect(changedSet.has(files[i])).toBe(true);
+    }
   });
 });
 
