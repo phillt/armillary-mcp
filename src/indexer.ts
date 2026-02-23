@@ -14,6 +14,7 @@ import {
   CACHE_VERSION,
   type CacheManifest,
   type FileEntry,
+  type LoadCacheResult,
 } from "./cache.js";
 
 export interface ProgressInfo {
@@ -106,9 +107,11 @@ export async function generateDocIndex(
 
   // Load cache for incremental builds
   const pluginNames = plugins ? plugins.map((p) => p.name).sort() : [];
-  const cache = incremental
+  const cacheResult: LoadCacheResult | null = incremental
     ? await loadCache({ cachePath, tsConfigFilePath: configPath, pluginNames, indexVersion })
     : null;
+  const cache = cacheResult?.manifest ?? null;
+  const tsConfigHash = cacheResult?.tsConfigHash ?? null;
 
   // New file entries map to build the updated cache
   const newFileEntries: Record<string, FileEntry> = {};
@@ -116,7 +119,10 @@ export async function generateDocIndex(
   // Filter out plugin-claimed files so progress count is accurate
   const tsFiles = filteredPaths.filter((fp) => !pluginClaimedExtensions.has(path.extname(fp).toLowerCase()));
 
-  // Compute diff for TS files
+  // Compute diff for TS files.
+  // Note: computeDiff checks against the full cache (TS + plugin files). The `deleted`
+  // field may include plugin files here (and vice versa below), but `deleted` is not
+  // consumed — removal is implicit since deleted files aren't in currentFiles.
   const tsDiff = await computeDiff(tsFiles, projectRoot, cache);
 
   // Carry forward unchanged TS file symbols from cache
@@ -183,7 +189,7 @@ export async function generateDocIndex(
       }
 
       // Build a set of changed plugin files for quick lookup
-      const changedPluginSet = new Set(pluginDiff.changed.map((fp) => fp));
+      const changedPluginSet = new Set(pluginDiff.changed);
 
       let pluginFileIndex = 0;
       const totalChangedPluginFiles = pluginDiff.changed.length;
@@ -237,9 +243,17 @@ export async function generateDocIndex(
             }
           }
 
-          // Store in cache entries
+          // Store in cache entries, merging if multiple plugins process the same file
           const contentHash = await hashFileContents(filePath);
-          newFileEntries[relativePath] = { contentHash, symbols: fileSymbols };
+          const existingEntry = newFileEntries[relativePath];
+          if (existingEntry) {
+            newFileEntries[relativePath] = {
+              contentHash,
+              symbols: [...existingEntry.symbols, ...fileSymbols],
+            };
+          } else {
+            newFileEntries[relativePath] = { contentHash, symbols: fileSymbols };
+          }
         }
       }
     } finally {
@@ -268,11 +282,10 @@ export async function generateDocIndex(
 
   // Write cache
   if (incremental) {
-    const tsConfigHash = await hashFileContents(configPath);
     const newManifest: CacheManifest = {
       cacheVersion: CACHE_VERSION,
       indexVersion,
-      tsConfigHash,
+      tsConfigHash: tsConfigHash ?? await hashFileContents(configPath),
       pluginNames,
       files: newFileEntries,
     };
