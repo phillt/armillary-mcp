@@ -383,22 +383,6 @@ describe("incremental builds", () => {
 
     await fs.unlink(path.join(tmpDir, "src", "b.ts"));
 
-    // Update tsconfig so it doesn't reference the deleted file
-    await fs.writeFile(
-      path.join(tmpDir, "tsconfig.json"),
-      JSON.stringify({
-        compilerOptions: {
-          target: "ES2022",
-          module: "ESNext",
-          moduleResolution: "Bundler",
-          declaration: true,
-          strict: true,
-          skipLibCheck: true,
-        },
-        include: ["src"],
-      })
-    );
-
     const index2 = await generateDocIndex(opts());
     expect(index2.symbols).toHaveLength(1);
     expect(index2.symbols[0].name).toBe("alpha");
