@@ -73,7 +73,7 @@ export function listSymbols(
   options: ListSymbolsOptions = {}
 ): ListSymbolsResult {
   const { kind, pathPrefix, cursor, limit: rawLimit } = options;
-  const limit = Math.max(1, Math.min(rawLimit ?? 50, 200));
+  const limit = Math.max(1, Math.min(sanitizeInt(rawLimit, 50), 200));
 
   const filtered = index.symbols.filter((s) => {
     if (kind && s.kind !== kind) return false;
@@ -104,10 +104,13 @@ export function getSymbol(
 export function searchSymbols(
   index: DocIndex,
   query: string,
-  options?: { kind?: string; limit?: number }
+  optionsOrLimit?: number | { kind?: string; limit?: number }
 ): SymbolDoc[] {
-  const { kind, limit } = options ?? {};
-  const effectiveLimit = Math.max(1, Math.min(limit ?? 10, 100));
+  const { kind, limit } =
+    typeof optionsOrLimit === "number"
+      ? { kind: undefined, limit: optionsOrLimit }
+      : optionsOrLimit ?? {};
+  const effectiveLimit = Math.max(1, Math.min(sanitizeInt(limit, 10), 100));
   const lowerQuery = query.toLowerCase();
   const results: SymbolDoc[] = [];
 
