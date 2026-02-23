@@ -1,11 +1,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import type { Project } from "ts-morph";
 import type { SymbolDoc } from "./schema.js";
 import { EXCLUDED_PATTERNS } from "./indexer.js";
 
 export interface PluginContext {
   projectRoot: string;
   tsConfigFilePath: string;
+  project?: Project;
 }
 
 export interface ArmillaryPlugin {
