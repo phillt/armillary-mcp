@@ -138,9 +138,10 @@
 Before creating new services, utilities, or helpers, use the armillary-mcp tools to check if similar functionality already exists:
 
 1. Use `docs.search` with relevant keywords to find existing implementations
-2. Use `docs.get` to review the full signature and documentation of potential matches
-3. If a suitable symbol exists, reuse or extend it instead of creating a new one
-4. If nothing suitable exists, proceed with creating a new implementation
+2. Use `docs.list` to browse symbols — filter by `kind` (e.g. "function", "class") or `pathPrefix` (e.g. "src/utils/") to scan areas search might miss
+3. Use `docs.get` to review the full signature and documentation of any candidates
+4. If a suitable symbol exists, reuse or extend it instead of creating a new one
+5. If nothing suitable exists, proceed with creating a new implementation
 
 This prevents duplicate services and keeps the codebase consistent.</code></pre>
       </div>
@@ -157,9 +158,10 @@ globs:
 Before creating new services, utilities, or helpers, use the armillary-mcp tools to check if similar functionality already exists:
 
 1. Use `docs.search` with relevant keywords to find existing implementations
-2. Use `docs.get` to review the full signature and documentation of potential matches
-3. If a suitable symbol exists, reuse or extend it instead of creating a new one
-4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
+2. Use `docs.list` to browse symbols — filter by `kind` (e.g. "function", "class") or `pathPrefix` (e.g. "src/utils/") to scan areas search might miss
+3. Use `docs.get` to review the full signature and documentation of any candidates
+4. If a suitable symbol exists, reuse or extend it instead of creating a new one
+5. If nothing suitable exists, proceed with creating a new implementation</code></pre>
       </div>
 
       <div class="tab-panel" id="tab-prompt-windsurf" role="tabpanel">
@@ -167,9 +169,10 @@ Before creating new services, utilities, or helpers, use the armillary-mcp tools
         <pre><code>Before creating new services, utilities, or helpers, use the armillary-mcp tools to check if similar functionality already exists:
 
 1. Use `docs.search` with relevant keywords to find existing implementations
-2. Use `docs.get` to review the full signature and documentation of potential matches
-3. If a suitable symbol exists, reuse or extend it instead of creating a new one
-4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
+2. Use `docs.list` to browse symbols — filter by `kind` (e.g. "function", "class") or `pathPrefix` (e.g. "src/utils/") to scan areas search might miss
+3. Use `docs.get` to review the full signature and documentation of any candidates
+4. If a suitable symbol exists, reuse or extend it instead of creating a new one
+5. If nothing suitable exists, proceed with creating a new implementation</code></pre>
         <p>Note: Windsurf rules have a 6,000 character limit per file.</p>
       </div>
 
@@ -180,9 +183,10 @@ Before creating new services, utilities, or helpers, use the armillary-mcp tools
 Before creating new services, utilities, or helpers, use the armillary-mcp tools to check if similar functionality already exists:
 
 1. Use `docs.search` with relevant keywords to find existing implementations
-2. Use `docs.get` to review the full signature and documentation of potential matches
-3. If a suitable symbol exists, reuse or extend it instead of creating a new one
-4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
+2. Use `docs.list` to browse symbols — filter by `kind` (e.g. "function", "class") or `pathPrefix` (e.g. "src/utils/") to scan areas search might miss
+3. Use `docs.get` to review the full signature and documentation of any candidates
+4. If a suitable symbol exists, reuse or extend it instead of creating a new one
+5. If nothing suitable exists, proceed with creating a new implementation</code></pre>
         <p>You can also create a targeted instruction file at <code>.github/instructions/code-reuse.instructions.md</code> with frontmatter to scope it to specific file patterns.</p>
       </div>
 
@@ -197,21 +201,23 @@ Before creating new services, utilities, or helpers, use the armillary-mcp tools
 Before creating new services, utilities, or helpers, use the armillary-mcp tools to check if similar functionality already exists:
 
 1. Use `docs.search` with relevant keywords to find existing implementations
-2. Use `docs.get` to review the full signature and documentation of potential matches
-3. If a suitable symbol exists, reuse or extend it instead of creating a new one
-4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
+2. Use `docs.list` to browse symbols — filter by `kind` (e.g. "function", "class") or `pathPrefix` (e.g. "src/utils/") to scan areas search might miss
+3. Use `docs.get` to review the full signature and documentation of any candidates
+4. If a suitable symbol exists, reuse or extend it instead of creating a new one
+5. If nothing suitable exists, proceed with creating a new implementation</code></pre>
       </div>
 
       <div class="tab-panel" id="tab-prompt-other" role="tabpanel">
         <p>
           For any other agent that supports MCP, add a system-level instruction (in whatever format
-          your agent uses) that tells it to query <code>docs.search</code> before writing new code.
+          your agent uses) that tells it to query the armillary-mcp tools before writing new code.
           The key points to include:
         </p>
         <ul>
           <li>Search the armillary-mcp documentation index before creating new services, utilities, or helpers</li>
           <li>Use <code>docs.search</code> with relevant keywords to find existing implementations</li>
-          <li>Use <code>docs.get</code> to review full signatures and documentation of potential matches</li>
+          <li>Use <code>docs.list</code> to browse symbols — filter by <code>kind</code> or <code>pathPrefix</code> to scan areas search might miss</li>
+          <li>Use <code>docs.get</code> to review full signatures and documentation of any candidates</li>
           <li>Reuse or extend existing symbols instead of creating duplicates</li>
         </ul>
       </div>
