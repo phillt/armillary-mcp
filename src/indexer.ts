@@ -70,7 +70,7 @@ export async function generateDocIndex(
 
   // Process plugins
   if (plugins && plugins.length > 0) {
-    const pluginContext = { projectRoot, tsConfigFilePath };
+    const pluginContext = { projectRoot, tsConfigFilePath, project };
     const initializedPlugins: ArmillaryPlugin[] = [];
 
     try {
