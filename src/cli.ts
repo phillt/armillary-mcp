@@ -69,7 +69,7 @@ async function runBuild(): Promise<void> {
       const prefix = `  ${label} [${info.current}/${info.total}] `;
       const file = info.file ?? "";
       const maxFileLen = cols - prefix.length;
-      const truncatedFile = file.length > maxFileLen ? "..." + file.slice(file.length - maxFileLen + 3) : file;
+      const truncatedFile = maxFileLen < 4 ? "" : file.length > maxFileLen ? "..." + file.slice(-(maxFileLen - 3)) : file;
       const line = prefix + truncatedFile;
       process.stdout.write(`\r${line.padEnd(cols)}`);
     };
