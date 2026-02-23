@@ -272,12 +272,14 @@ function resolveDefaultExportName(sourceFile: SourceFile): string | undefined {
  */
 const reactPlugin: ArmillaryPlugin = (() => {
   let project: Project | undefined;
+  let projectRoot: string | undefined;
 
   return {
     name: "react",
     extensions: [".tsx", ".jsx"],
 
     async init(context: PluginContext) {
+      projectRoot = context.projectRoot;
       project = new Project({
         tsConfigFilePath: context.tsConfigFilePath,
         skipAddingFilesFromTsConfig: false,
@@ -286,6 +288,7 @@ const reactPlugin: ArmillaryPlugin = (() => {
 
     async dispose() {
       project = undefined;
+      projectRoot = undefined;
     },
 
     extractSymbols(filePath: string, content: string): SymbolDoc[] {
@@ -303,14 +306,8 @@ const reactPlugin: ArmillaryPlugin = (() => {
         });
       }
 
-      const configPath = project.getCompilerOptions().configFilePath;
-      if (!configPath) {
-        throw new Error("React plugin: could not resolve tsconfig path");
-      }
-      const projectRoot = path.dirname(configPath as string);
-
       // Reuse the core extractor
-      const symbols = extractFileSymbols(sourceFile, projectRoot);
+      const symbols = extractFileSymbols(sourceFile, projectRoot!);
 
       // Post-process: detect components and enrich metadata
       for (const sym of symbols) {
