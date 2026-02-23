@@ -39,11 +39,21 @@ export async function generateDocIndex(
   // Resolve file list from tsconfig without loading ASTs (lightweight)
   const configPath = path.resolve(tsConfigFilePath);
   const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
+  if (configFile.error) {
+    const msg = ts.flattenDiagnosticMessageText(configFile.error.messageText, "\n");
+    throw new Error(`Failed to read tsconfig at ${configPath}: ${msg}`);
+  }
   const parsedConfig = ts.parseJsonConfigFileContent(
     configFile.config,
     ts.sys,
     path.dirname(configPath)
   );
+  if (parsedConfig.errors.length > 0) {
+    const msgs = parsedConfig.errors
+      .map((d) => ts.flattenDiagnosticMessageText(d.messageText, "\n"))
+      .join("\n");
+    throw new Error(`tsconfig errors in ${configPath}:\n${msgs}`);
+  }
   const allFilePaths = parsedConfig.fileNames;
 
   // Create project with compiler options from tsconfig but skip loading all files upfront
