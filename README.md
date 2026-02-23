@@ -104,9 +104,9 @@ The MCP server lets AI coding assistants query your codebase:
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `docs.list` | List all documented symbols (id, kind, name) | None |
+| `docs.list` | List documented symbols with optional filtering and pagination | `kind`, `pathPrefix`, `cursor`, `limit` (all optional) |
 | `docs.get` | Get full documentation for a symbol | `id` (string, required) |
-| `docs.search` | Search symbols by name or description | `q` (string, required), `limit` (number, optional, default: 10) |
+| `docs.search` | Search symbols by name or description | `q` (string, required), `kind` (string, optional), `limit` (number, optional) |
 
 ## Programmatic API
 
