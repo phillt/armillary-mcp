@@ -57,7 +57,7 @@ Before creating new services, utilities, or helpers, use the armillary-mcp tools
 This prevents duplicate services and keeps the codebase consistent.
 ```
 
-For Cursor, Windsurf, VS Code, Zed, Cline, and other agents, see the [manual](https://philllt.github.io/armillary-mcp/manual.html#quick-setup) for agent-specific prompt configuration.
+For Cursor, Windsurf, VS Code, Zed, Cline, and other agents, see the [manual](https://phillt.github.io/armillary-mcp/manual.html#quick-setup) for agent-specific prompt configuration.
 
 ### 4. Add the MCP server to your agent
 
@@ -67,7 +67,7 @@ For **Claude Code**, register the server with the CLI:
 claude mcp add --transport stdio armillary-mcp -- npx armillary-mcp-server
 ```
 
-For **Cursor**, **Windsurf**, and other MCP clients, add to your client's config file (see the [manual](https://philllt.github.io/armillary-mcp/manual.html#quick-setup) for agent-specific config paths):
+For **Cursor**, **Windsurf**, and other MCP clients, add to your client's config file (see the [manual](https://phillt.github.io/armillary-mcp/manual.html#quick-setup) for agent-specific config paths):
 
 ```json
 {
@@ -134,14 +134,14 @@ const result = getSymbol(loaded, "src/foo.ts#bar");
 const matches = searchSymbols(loaded, "generate", { limit: 5 });
 ```
 
-See the [full manual](https://philllt.github.io/armillary-mcp/manual.html) for complete API documentation including `watchAndRegenerate`, `createBuildController`, Zod schemas, and the schema reference.
+See the [full manual](https://phillt.github.io/armillary-mcp/manual.html) for complete API documentation including `watchAndRegenerate`, `createBuildController`, Zod schemas, and the schema reference.
 
 ## Documentation
 
-Full documentation is available at: https://philllt.github.io/armillary-mcp/
+Full documentation is available at: https://phillt.github.io/armillary-mcp/
 
-- [Home](https://philllt.github.io/armillary-mcp/) — overview and quick start
-- [Manual](https://philllt.github.io/armillary-mcp/manual.html) — CLI, MCP server, API, and schema reference
+- [Home](https://phillt.github.io/armillary-mcp/) — overview and quick start
+- [Manual](https://phillt.github.io/armillary-mcp/manual.html) — CLI, MCP server, API, and schema reference
 
 ## Development
 
@@ -153,7 +153,7 @@ Full documentation is available at: https://philllt.github.io/armillary-mcp/
 ### Setup
 
 ```sh
-git clone https://github.com/philllt/armillary-mcp.git
+git clone https://github.com/phillt/armillary-mcp.git
 cd armillary-mcp
 pnpm install
 ```
