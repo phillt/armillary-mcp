@@ -123,7 +123,7 @@ describe("extractFileSymbols", () => {
     });
   });
 
-  it("sorts exports by name for determinism", () => {
+  it("extracts all exports regardless of declaration order", () => {
     const project = createProject();
     const sf = project.createSourceFile(
       "/project/src/multi.ts",
@@ -134,7 +134,8 @@ export function middle() {}
 `
     );
     const symbols = extractFileSymbols(sf, "/project");
-    const names = symbols.map((s) => s.name);
+    const names = symbols.map((s) => s.name).sort();
+    // All three exports are present (sorting is done globally by the indexer)
     expect(names).toEqual(["alpha", "middle", "zebra"]);
   });
 

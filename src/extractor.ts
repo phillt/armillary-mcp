@@ -113,12 +113,7 @@ export function extractFileSymbols(
 
   const exportedDecls = sourceFile.getExportedDeclarations();
 
-  // Sort by export name for determinism
-  const sortedEntries = [...exportedDecls.entries()].sort(([a], [b]) =>
-    a.localeCompare(b)
-  );
-
-  for (const [exportName, declarations] of sortedEntries) {
+  for (const [exportName, declarations] of exportedDecls.entries()) {
     for (const declaration of declarations) {
       // Skip re-exports: only process declarations from this file
       const declSourceFile = declaration.getSourceFile();
