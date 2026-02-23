@@ -145,6 +145,31 @@ describe("loadCache", () => {
     expect(result).toBeNull();
   });
 
+  it("returns null for malformed structure", async () => {
+    await writeTsConfig();
+    // Valid JSON but files entry has wrong shape (missing symbols array)
+    const tsConfigHash = await hashFileContents(tsConfigPath());
+    await fs.writeFile(
+      cachePath(),
+      JSON.stringify({
+        cacheVersion: CACHE_VERSION,
+        indexVersion: "1.0.0",
+        tsConfigHash,
+        pluginNames: [],
+        files: {
+          "src/foo.ts": { contentHash: "abc", symbols: "not-an-array" },
+        },
+      })
+    );
+    const result = await loadCache({
+      cachePath: cachePath(),
+      tsConfigFilePath: tsConfigPath(),
+      pluginNames: [],
+      indexVersion: "1.0.0",
+    });
+    expect(result).toBeNull();
+  });
+
   it("returns null for wrong cacheVersion", async () => {
     await writeValidCache({ cacheVersion: "999" });
     const result = await loadCache({
@@ -199,7 +224,9 @@ describe("loadCache", () => {
       pluginNames: [],
       indexVersion: "1.0.0",
     });
-    expect(result).toEqual(manifest);
+    expect(result).not.toBeNull();
+    expect(result!.manifest).toEqual(manifest);
+    expect(result!.tsConfigHash).toMatch(/^[a-f0-9]{64}$/);
   });
 
   it("writeCache → loadCache round-trip", async () => {
@@ -237,7 +264,9 @@ describe("loadCache", () => {
       indexVersion: "1.0.0",
     });
 
-    expect(loaded).toEqual(manifest);
+    expect(loaded).not.toBeNull();
+    expect(loaded!.manifest).toEqual(manifest);
+    expect(loaded!.tsConfigHash).toBe(tsConfigHash);
   });
 });
 
