@@ -20,3 +20,4 @@ export {
   type ArmillaryPlugin,
   type PluginContext,
 } from "./plugins.js";
+export type { CacheManifest, FileEntry } from "./cache.js";
