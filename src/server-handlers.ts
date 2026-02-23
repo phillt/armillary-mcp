@@ -109,6 +109,8 @@ export function searchSymbols(
   for (const symbol of index.symbols) {
     if (results.length >= effectiveLimit) break;
 
+    if (kind && symbol.kind !== kind) continue;
+
     const nameMatch = symbol.name.toLowerCase().includes(lowerQuery);
     const descMatch = symbol.description
       ?.toLowerCase()

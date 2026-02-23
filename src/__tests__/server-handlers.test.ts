@@ -336,29 +336,38 @@ describe("searchSymbols", () => {
   });
 
   it("respects limit parameter", () => {
-    const results = searchSymbols(index, "a", 2);
+    const results = searchSymbols(index, "a", { limit: 2 });
     expect(results).toHaveLength(2);
   });
 
   it("defaults to limit of 10", () => {
-    // All 4 symbols match "a" somewhere in name or description
     const results = searchSymbols(index, "a");
     expect(results.length).toBeLessThanOrEqual(10);
   });
 
   it("clamps limit to max 100", () => {
-    const results = searchSymbols(index, "a", 999);
-    // Should not crash; just returns what's available
+    const results = searchSymbols(index, "a", { limit: 999 });
     expect(results.length).toBeLessThanOrEqual(100);
   });
 
   it("clamps limit to min 1", () => {
-    const results = searchSymbols(index, "add", 0);
+    const results = searchSymbols(index, "add", { limit: 0 });
     expect(results.length).toBeGreaterThanOrEqual(1);
   });
 
   it("returns empty array for no matches", () => {
     const results = searchSymbols(index, "zzzznotfound");
+    expect(results).toEqual([]);
+  });
+
+  it("filters by kind in combination with text query", () => {
+    const results = searchSymbols(index, "add", { kind: "type" });
+    expect(results).toHaveLength(1);
+    expect(results[0].name).toBe("AddResult");
+  });
+
+  it("kind alone without matching text returns nothing", () => {
+    const results = searchSymbols(index, "zzzznotfound", { kind: "function" });
     expect(results).toEqual([]);
   });
 });
