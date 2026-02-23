@@ -29,7 +29,7 @@ async function main() {
     name: "armillary-mcp",
     version: "1.0.0",
     instructions:
-      "Armillary MCP indexes TypeScript projects so you can discover and reuse existing code. Before writing new functions, utilities, or types, search the index to check if a suitable implementation already exists. Use docs.list to browse all indexed symbols, docs.search to find symbols by name or description, and docs.get to retrieve full documentation including signatures, parameters, and JSDoc annotations.",
+      "Armillary MCP indexes TypeScript projects so you can discover and reuse existing code. Before writing new functions, utilities, or types, check if a suitable implementation already exists. Use docs.search to find symbols by name or description, docs.list to browse and filter by kind or directory path, and docs.get to retrieve full documentation including signatures, parameters, and JSDoc annotations.",
   });
 
   server.tool(
