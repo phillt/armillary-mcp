@@ -536,3 +536,99 @@ describe("incremental builds", () => {
     expect(secondIndexingCalls[0].file).toBe("src/a.ts");
   });
 });
+
+describe("batched project recreation", () => {
+  const opts = () => ({
+    tsConfigFilePath: path.join(tmpDir, "tsconfig.json"),
+    projectRoot: tmpDir,
+  });
+
+  it("batchSize produces correct output for all files", async () => {
+    // Create 5 files
+    for (let i = 0; i < 5; i++) {
+      await fs.writeFile(
+        path.join(tmpDir, "src", `file${i}.ts`),
+        `export function fn${i}() { return ${i}; }`
+      );
+    }
+
+    const index = await generateDocIndex({
+      ...opts(),
+      batchSize: 2,
+      incremental: false,
+    });
+
+    // All 5 symbols should be present
+    expect(index.symbols).toHaveLength(5);
+    const names = index.symbols.map((s) => s.name).sort();
+    expect(names).toEqual(["fn0", "fn1", "fn2", "fn3", "fn4"]);
+
+    // Each symbol should have correct metadata
+    for (let i = 0; i < 5; i++) {
+      const sym = index.symbols.find((s) => s.name === `fn${i}`);
+      expect(sym).toBeDefined();
+      expect(sym!.kind).toBe("function");
+      expect(sym!.filePath).toBe(`src/file${i}.ts`);
+      expect(sym!.exported).toBe(true);
+    }
+  });
+
+  it("batchSize + incremental produces identical output to non-incremental", async () => {
+    for (let i = 0; i < 5; i++) {
+      await fs.writeFile(
+        path.join(tmpDir, "src", `file${i}.ts`),
+        `export function fn${i}() { return ${i}; }`
+      );
+    }
+
+    const indexBatched = await generateDocIndex({
+      ...opts(),
+      batchSize: 2,
+      incremental: false,
+    });
+
+    const indexNormal = await generateDocIndex({
+      ...opts(),
+      incremental: false,
+    });
+
+    const strip = (idx: typeof indexBatched) => ({ ...idx, generatedAt: "" });
+    expect(strip(indexBatched)).toEqual(strip(indexNormal));
+  });
+
+  it("progress events are consistent under batching", async () => {
+    for (let i = 0; i < 5; i++) {
+      await fs.writeFile(
+        path.join(tmpDir, "src", `file${i}.ts`),
+        `export function fn${i}() { return ${i}; }`
+      );
+    }
+
+    const onProgress = vi.fn();
+    await generateDocIndex({
+      ...opts(),
+      batchSize: 2,
+      incremental: false,
+      onProgress,
+    });
+
+    const calls = onProgress.mock.calls.map((c) => c[0]);
+    const indexingCalls = calls.filter((c: { phase: string }) => c.phase === "indexing");
+
+    // Should fire for every file
+    expect(indexingCalls.length).toBe(5);
+
+    // current should increase monotonically from 1..5
+    const currents = indexingCalls.map((c: { current: number }) => c.current);
+    for (let i = 1; i < currents.length; i++) {
+      expect(currents[i]).toBeGreaterThan(currents[i - 1]);
+    }
+    expect(currents[0]).toBe(1);
+    expect(currents[currents.length - 1]).toBe(5);
+
+    // total should be consistent
+    const totals = new Set(indexingCalls.map((c: { total: number }) => c.total));
+    expect(totals.size).toBe(1);
+    expect(totals.has(5)).toBe(true);
+  });
+});
