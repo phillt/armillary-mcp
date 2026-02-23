@@ -1,4 +1,4 @@
-import { Project, Node, SyntaxKind, type SourceFile, type Type } from "ts-morph";
+import { Project, Node, SyntaxKind, type ExportedDeclarations, type SourceFile, type Type } from "ts-morph";
 import path from "node:path";
 import type { ArmillaryPlugin, PluginContext } from "../plugins.js";
 import type { SymbolDoc } from "../schema.js";
@@ -10,15 +10,17 @@ function isPascalCase(name: string): boolean {
 
 /**
  * Check if a function/arrow body contains JSX nodes.
+ * Uses forEachDescendant with early termination to avoid materializing the full array.
  */
 function bodyContainsJsx(node: Node): boolean {
-  // Look for JsxElement, JsxSelfClosingElement, or JsxFragment in descendants
-  return node.getDescendants().some(
-    (d) =>
-      Node.isJsxElement(d) ||
-      Node.isJsxSelfClosingElement(d) ||
-      Node.isJsxFragment(d)
-  );
+  let found = false;
+  node.forEachDescendant((d, traversal) => {
+    if (Node.isJsxElement(d) || Node.isJsxSelfClosingElement(d) || Node.isJsxFragment(d)) {
+      found = true;
+      traversal.stop();
+    }
+  });
+  return found;
 }
 
 /**
@@ -35,12 +37,10 @@ function isReactReturnType(typeText: string): boolean {
  */
 function isReactComponent(
   sym: SymbolDoc,
-  sourceFile: SourceFile
+  exportedDecls: ReadonlyMap<string, ExportedDeclarations[]>
 ): boolean {
   if (!isPascalCase(sym.name)) return false;
   if (sym.kind !== "function" && sym.kind !== "const") return false;
-
-  const exportedDecls = sourceFile.getExportedDeclarations();
   // Try the original export name; for default exports we need to check "default"
   let declarations = exportedDecls.get(sym.name);
   if (!declarations || declarations.length === 0) {
@@ -102,9 +102,8 @@ function isReactComponent(
  */
 function extractProps(
   sym: SymbolDoc,
-  sourceFile: SourceFile
+  exportedDecls: ReadonlyMap<string, ExportedDeclarations[]>
 ): SymbolDoc["params"] | undefined {
-  const exportedDecls = sourceFile.getExportedDeclarations();
   let declarations = exportedDecls.get(sym.name);
   if (!declarations || declarations.length === 0) {
     declarations = exportedDecls.get("default");
@@ -250,8 +249,8 @@ function expandPropsType(
 /**
  * Resolve the actual name of a default export.
  */
-function resolveDefaultExportName(sourceFile: SourceFile): string | undefined {
-  const defaultDecls = sourceFile.getExportedDeclarations().get("default");
+function resolveDefaultExportName(exportedDecls: ReadonlyMap<string, ExportedDeclarations[]>): string | undefined {
+  const defaultDecls = exportedDecls.get("default");
   if (!defaultDecls || defaultDecls.length === 0) return undefined;
 
   const decl = defaultDecls[0];
@@ -320,11 +319,14 @@ const reactPlugin: ArmillaryPlugin = (() => {
       // Reuse the core extractor
       const symbols = extractFileSymbols(sourceFile, projectRoot!);
 
+      // Compute exported declarations once for all symbols in this file
+      const exportedDecls = sourceFile.getExportedDeclarations();
+
       // Post-process: detect components and enrich metadata
       for (const sym of symbols) {
         // Resolve default export names
         if (sym.name === "default") {
-          const resolvedName = resolveDefaultExportName(sourceFile);
+          const resolvedName = resolveDefaultExportName(exportedDecls);
           if (resolvedName) {
             sym.name = resolvedName;
             sym.id = `${sym.filePath}#${resolvedName}`;
@@ -332,11 +334,11 @@ const reactPlugin: ArmillaryPlugin = (() => {
         }
 
         // Detect and upgrade React components
-        if (isReactComponent(sym, sourceFile)) {
+        if (isReactComponent(sym, exportedDecls)) {
           sym.kind = "component";
 
           // Extract props
-          const props = extractProps(sym, sourceFile);
+          const props = extractProps(sym, exportedDecls);
           if (props) {
             sym.params = props;
           }
