@@ -588,14 +588,28 @@ await controller.waitForIdle();</code></pre>
 const index = await loadDocIndex(process.cwd());</code></pre>
     <p>Reads <code>.armillary-mcp-docs/index.json</code> relative to the given project root. Throws if the file is missing or fails Zod validation.</p>
 
-    <h3><code>listSymbols(index)</code></h3>
-    <p>Return a summary array of all symbols in an index.</p>
+    <h3><code>listSymbols(index, options?)</code></h3>
+    <p>Return a paginated, optionally filtered list of symbol summaries from an index.</p>
     <pre><code>import { loadDocIndex, listSymbols } from "armillary-mcp";
 
 const index = await loadDocIndex(process.cwd());
-const symbols = listSymbols(index);
-// [{ id: "src/foo.ts#bar", kind: "function", name: "bar" }, ...]</code></pre>
-    <p>Returns: <code>Array&lt;{ id: string; kind: string; name: string }&gt;</code></p>
+const { symbols, totalFiltered, nextCursor } = listSymbols(index, {
+  kind: "function",
+  pathPrefix: "src/utils/",
+  limit: 20,
+});</code></pre>
+
+    <p><strong><code>ListSymbolsOptions</code></strong></p>
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>kind</code></td><td>string</td><td>No</td><td>Filter by symbol kind</td></tr>
+        <tr><td><code>pathPrefix</code></td><td>string</td><td>No</td><td>Filter to symbols whose file path starts with this prefix</td></tr>
+        <tr><td><code>cursor</code></td><td>string</td><td>No</td><td>Pagination cursor from a previous <code>nextCursor</code></td></tr>
+        <tr><td><code>limit</code></td><td>number</td><td>No</td><td>Max results per page (default: 50, max: 200)</td></tr>
+      </tbody>
+    </table>
+    <p>Returns: <code>{ symbols: Array&lt;{ id: string; kind: string; name: string }&gt;, totalFiltered: number, nextCursor?: string }</code></p>
 
     <h3><code>getSymbol(index, id)</code></h3>
     <p>Look up a single symbol by its ID.</p>
@@ -605,10 +619,10 @@ if (sym) {
 }</code></pre>
     <p>Returns: <code>SymbolDoc | undefined</code></p>
 
-    <h3><code>searchSymbols(index, query, limit?)</code></h3>
+    <h3><code>searchSymbols(index, query, options?)</code></h3>
     <p>Search symbols by name or description (case-insensitive substring match).</p>
-    <pre><code>const results = searchSymbols(index, "generate", 5);</code></pre>
-    <p>The <code>limit</code> parameter is clamped between 1 and 100 (default: 10).</p>
+    <pre><code>const results = searchSymbols(index, "generate", { kind: "function", limit: 5 });</code></pre>
+    <p>The <code>limit</code> option is clamped between 1 and 100 (default: 10). The optional <code>kind</code> filter narrows results to a specific symbol type.</p>
     <p>Returns: <code>SymbolDoc[]</code></p>
 
     <h3>Zod Schemas</h3>

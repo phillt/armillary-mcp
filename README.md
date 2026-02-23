@@ -129,9 +129,9 @@ const index = await generateDocIndex({
 
 // Load and query
 const loaded = await loadDocIndex(process.cwd());
-const symbols = listSymbols(loaded);
+const { symbols } = listSymbols(loaded, { kind: "function" });
 const result = getSymbol(loaded, "src/foo.ts#bar");
-const matches = searchSymbols(loaded, "generate", 5);
+const matches = searchSymbols(loaded, "generate", { limit: 5 });
 ```
 
 See the [full manual](https://philllt.github.io/armillary-mcp/manual.html) for complete API documentation including `watchAndRegenerate`, `createBuildController`, Zod schemas, and the schema reference.
