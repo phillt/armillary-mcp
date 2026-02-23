@@ -273,6 +273,7 @@ function resolveDefaultExportName(sourceFile: SourceFile): string | undefined {
 const reactPlugin: ArmillaryPlugin = (() => {
   let project: Project | undefined;
   let projectRoot: string | undefined;
+  let ownsProject = false;
 
   return {
     name: "react",
@@ -280,10 +281,16 @@ const reactPlugin: ArmillaryPlugin = (() => {
 
     async init(context: PluginContext) {
       projectRoot = context.projectRoot;
-      project = new Project({
-        tsConfigFilePath: context.tsConfigFilePath,
-        skipAddingFilesFromTsConfig: false,
-      });
+      if (context.project) {
+        project = context.project;
+        ownsProject = false;
+      } else {
+        project = new Project({
+          tsConfigFilePath: context.tsConfigFilePath,
+          skipAddingFilesFromTsConfig: false,
+        });
+        ownsProject = true;
+      }
     },
 
     async dispose() {
@@ -299,7 +306,11 @@ const reactPlugin: ArmillaryPlugin = (() => {
       // Add or update the source file in the project
       let sourceFile = project.getSourceFile(filePath);
       if (sourceFile) {
-        sourceFile.replaceWithText(content);
+        // When using the shared project, the file is already loaded with
+        // current disk content by the indexer — skip the expensive rewrite.
+        if (ownsProject) {
+          sourceFile.replaceWithText(content);
+        }
       } else {
         sourceFile = project.createSourceFile(filePath, content, {
           overwrite: true,
