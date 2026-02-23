@@ -94,10 +94,13 @@ export async function generateDocIndex(
             const symbols = await plugin.extractSymbols(filePath, content);
             const relativePath = toRelativePosixPath(filePath, projectRoot);
             for (const sym of symbols) {
-              if (!sym.filePath || path.isAbsolute(sym.filePath)) {
+              const filePathChanged = !sym.filePath || path.isAbsolute(sym.filePath);
+              if (filePathChanged) {
                 sym.filePath = relativePath;
               }
-              sym.id = `${sym.filePath}#${sym.name}`;
+              if (!sym.id || filePathChanged) {
+                sym.id = `${sym.filePath}#${sym.name}`;
+              }
             }
             allSymbols.push(...symbols);
           } else if (plugin.extract) {
