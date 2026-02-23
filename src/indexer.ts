@@ -5,6 +5,16 @@ import { DocIndexSchema, type DocIndex, type SymbolDoc } from "./schema.js";
 import { extractFileSymbols } from "./extractor.js";
 import type { ArmillaryPlugin } from "./plugins.js";
 import { findPluginFiles } from "./plugins.js";
+import {
+  loadCache,
+  computeDiff,
+  writeCache,
+  hashFileContents,
+  toRelativePosixPath,
+  CACHE_VERSION,
+  type CacheManifest,
+  type FileEntry,
+} from "./cache.js";
 
 export interface ProgressInfo {
   phase: string;
@@ -19,6 +29,8 @@ export interface IndexerOptions {
   outputPath?: string;
   plugins?: ArmillaryPlugin[];
   onProgress?: (info: ProgressInfo) => void;
+  /** Enable incremental caching. Default: true */
+  incremental?: boolean;
 }
 
 export const EXCLUDED_PATTERNS = [
@@ -32,17 +44,16 @@ function isExcluded(filePath: string): boolean {
   return EXCLUDED_PATTERNS.some((pattern) => pattern.test(filePath));
 }
 
-function toRelativePosixPath(filePath: string, projectRoot: string): string {
-  const rel = path.relative(projectRoot, filePath);
-  return rel.split(path.sep).join("/");
-}
-
 export async function generateDocIndex(
   options: IndexerOptions
 ): Promise<DocIndex> {
   const { tsConfigFilePath, projectRoot, plugins, onProgress } = options;
+  const incremental = options.incremental ?? true;
   const outputPath =
     options.outputPath ?? path.join(projectRoot, ".armillary-mcp-docs", "index.json");
+  const outputDir = path.dirname(outputPath);
+  const cachePath = path.join(outputDir, "cache.json");
+  const indexVersion = "1.0.0";
 
   // Resolve file list from tsconfig without loading ASTs (lightweight)
   const configPath = path.resolve(tsConfigFilePath);
@@ -93,17 +104,46 @@ export async function generateDocIndex(
     }
   }
 
+  // Load cache for incremental builds
+  const pluginNames = plugins ? plugins.map((p) => p.name).sort() : [];
+  const cache = incremental
+    ? await loadCache({ cachePath, tsConfigFilePath: configPath, pluginNames, indexVersion })
+    : null;
+
+  // New file entries map to build the updated cache
+  const newFileEntries: Record<string, FileEntry> = {};
+
   // Filter out plugin-claimed files so progress count is accurate
   const tsFiles = filteredPaths.filter((fp) => !pluginClaimedExtensions.has(path.extname(fp).toLowerCase()));
 
-  // Process files one at a time to avoid loading all ASTs into memory
-  for (let i = 0; i < tsFiles.length; i++) {
-    const filePath = tsFiles[i];
-    onProgress?.({ phase: "indexing", current: i + 1, total: tsFiles.length, file: toRelativePosixPath(filePath, projectRoot) });
+  // Compute diff for TS files
+  const tsDiff = await computeDiff(tsFiles, projectRoot, cache);
+
+  // Carry forward unchanged TS file symbols from cache
+  if (cache) {
+    for (const absPath of tsDiff.unchanged) {
+      const relPath = toRelativePosixPath(absPath, projectRoot);
+      const entry = cache.files[relPath];
+      if (entry) {
+        allSymbols.push(...entry.symbols);
+        newFileEntries[relPath] = entry;
+      }
+    }
+  }
+
+  // Re-extract only changed TS files
+  for (let i = 0; i < tsDiff.changed.length; i++) {
+    const filePath = tsDiff.changed[i];
+    onProgress?.({ phase: "indexing", current: i + 1, total: tsDiff.changed.length, file: toRelativePosixPath(filePath, projectRoot) });
     const sourceFile = project.addSourceFileAtPath(filePath);
     const symbols = extractFileSymbols(sourceFile, projectRoot);
     allSymbols.push(...symbols);
     project.removeSourceFile(sourceFile);
+
+    // Store in cache entries
+    const relPath = toRelativePosixPath(filePath, projectRoot);
+    const contentHash = await hashFileContents(filePath);
+    newFileEntries[relPath] = { contentHash, symbols };
   }
 
   // Process plugins
@@ -119,27 +159,50 @@ export async function generateDocIndex(
         initializedPlugins.push(plugin);
       }
 
-      let pluginFileIndex = 0;
-      // Count total plugin files for progress reporting
+      // Discover plugin files
       const pluginFileLists: string[][] = [];
       for (const plugin of plugins) {
         const files = await findPluginFiles(projectRoot, plugin.extensions, EXCLUDED_PATTERNS);
         pluginFileLists.push(files);
       }
-      const totalPluginFiles = pluginFileLists.reduce((sum, f) => sum + f.length, 0);
+      const allPluginFiles = pluginFileLists.flat();
+
+      // Compute diff for plugin files
+      const pluginDiff = await computeDiff(allPluginFiles, projectRoot, cache);
+
+      // Carry forward unchanged plugin file symbols from cache
+      if (cache) {
+        for (const absPath of pluginDiff.unchanged) {
+          const relPath = toRelativePosixPath(absPath, projectRoot);
+          const entry = cache.files[relPath];
+          if (entry) {
+            allSymbols.push(...entry.symbols);
+            newFileEntries[relPath] = entry;
+          }
+        }
+      }
+
+      // Build a set of changed plugin files for quick lookup
+      const changedPluginSet = new Set(pluginDiff.changed.map((fp) => fp));
+
+      let pluginFileIndex = 0;
+      const totalChangedPluginFiles = pluginDiff.changed.length;
 
       for (let pi = 0; pi < plugins.length; pi++) {
         const plugin = plugins[pi];
         const files = pluginFileLists[pi];
 
         for (const filePath of files) {
+          if (!changedPluginSet.has(filePath)) continue;
+
           pluginFileIndex++;
-          onProgress?.({ phase: "plugins", current: pluginFileIndex, total: totalPluginFiles, file: toRelativePosixPath(filePath, projectRoot) });
+          onProgress?.({ phase: "plugins", current: pluginFileIndex, total: totalChangedPluginFiles, file: toRelativePosixPath(filePath, projectRoot) });
           const content = await fs.readFile(filePath, "utf-8");
+          const relativePath = toRelativePosixPath(filePath, projectRoot);
+          const fileSymbols: SymbolDoc[] = [];
 
           if (plugin.extractSymbols) {
             const symbols = await plugin.extractSymbols(filePath, content);
-            const relativePath = toRelativePosixPath(filePath, projectRoot);
             for (const sym of symbols) {
               const filePathChanged = !sym.filePath || path.isAbsolute(sym.filePath);
               if (filePathChanged) {
@@ -149,6 +212,7 @@ export async function generateDocIndex(
                 sym.id = `${sym.filePath}#${sym.name}`;
               }
             }
+            fileSymbols.push(...symbols);
             allSymbols.push(...symbols);
             // Release the source file to free memory
             const sf = project.getSourceFile(filePath);
@@ -163,15 +227,19 @@ export async function generateDocIndex(
               });
               const symbols = extractFileSymbols(sf, projectRoot);
               // Rewrite filePath to point to the original file, not the virtual .ts
-              const relativePath = toRelativePosixPath(filePath, projectRoot);
               for (const sym of symbols) {
                 sym.filePath = relativePath;
                 sym.id = `${relativePath}#${sym.name}`;
               }
+              fileSymbols.push(...symbols);
               allSymbols.push(...symbols);
               project.removeSourceFile(sf);
             }
           }
+
+          // Store in cache entries
+          const contentHash = await hashFileContents(filePath);
+          newFileEntries[relativePath] = { contentHash, symbols: fileSymbols };
         }
       }
     } finally {
@@ -186,7 +254,7 @@ export async function generateDocIndex(
   allSymbols.sort((a, b) => a.id.localeCompare(b.id));
 
   const docIndex: DocIndex = {
-    version: "1.0.0",
+    version: indexVersion,
     generatedAt: new Date().toISOString(),
     projectRoot,
     symbols: allSymbols,
@@ -195,9 +263,21 @@ export async function generateDocIndex(
   const validated = DocIndexSchema.parse(docIndex);
 
   // Write output
-  const outputDir = path.dirname(outputPath);
   await fs.mkdir(outputDir, { recursive: true });
   await fs.writeFile(outputPath, JSON.stringify(validated, null, 2) + "\n");
+
+  // Write cache
+  if (incremental) {
+    const tsConfigHash = await hashFileContents(configPath);
+    const newManifest: CacheManifest = {
+      cacheVersion: CACHE_VERSION,
+      indexVersion,
+      tsConfigHash,
+      pluginNames,
+      files: newFileEntries,
+    };
+    await writeCache(cachePath, newManifest);
+  }
 
   return validated;
 }
