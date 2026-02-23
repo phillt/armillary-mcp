@@ -23,6 +23,8 @@ export interface DiffResult {
   changed: string[];
   deleted: string[];
   unchanged: string[];
+  /** Maps absolute file path → content hash for every file that was hashed during diff. */
+  hashes: Map<string, string>;
 }
 
 export function toRelativePosixPath(
@@ -112,42 +114,58 @@ export async function computeDiff(
 ): Promise<DiffResult> {
   const changed: string[] = [];
   const unchanged: string[] = [];
+  const hashes = new Map<string, string>();
 
   const seenRelPaths = new Set<string>();
+
+  if (!cache) {
+    // No cache — all files are changed, no hashing needed
+    for (const absPath of currentFiles) {
+      seenRelPaths.add(toRelativePosixPath(absPath, projectRoot));
+      changed.push(absPath);
+    }
+    return { changed, deleted: [], unchanged, hashes };
+  }
+
+  // Separate files that need hash comparison from definitely-new files
+  const needsHash: { absPath: string; cachedHash: string }[] = [];
 
   for (const absPath of currentFiles) {
     const relPath = toRelativePosixPath(absPath, projectRoot);
     seenRelPaths.add(relPath);
 
-    if (!cache) {
-      changed.push(absPath);
-      continue;
-    }
-
     const cached = cache.files[relPath];
     if (!cached) {
       changed.push(absPath);
-      continue;
-    }
-
-    const currentHash = await hashFileContents(absPath);
-    if (currentHash !== cached.contentHash) {
-      changed.push(absPath);
     } else {
-      unchanged.push(absPath);
+      needsHash.push({ absPath, cachedHash: cached.contentHash });
+    }
+  }
+
+  // Hash in parallel batches to avoid EMFILE errors
+  const HASH_CONCURRENCY = 32;
+  for (let i = 0; i < needsHash.length; i += HASH_CONCURRENCY) {
+    const batch = needsHash.slice(i, i + HASH_CONCURRENCY);
+    const results = await Promise.all(
+      batch.map(async ({ absPath, cachedHash }) => {
+        const currentHash = await hashFileContents(absPath);
+        return { absPath, currentHash, match: currentHash === cachedHash };
+      })
+    );
+    for (const { absPath, currentHash, match } of results) {
+      hashes.set(absPath, currentHash);
+      (match ? unchanged : changed).push(absPath);
     }
   }
 
   const deleted: string[] = [];
-  if (cache) {
-    for (const relPath of Object.keys(cache.files)) {
-      if (!seenRelPaths.has(relPath)) {
-        deleted.push(relPath);
-      }
+  for (const relPath of Object.keys(cache.files)) {
+    if (!seenRelPaths.has(relPath)) {
+      deleted.push(relPath);
     }
   }
 
-  return { changed, deleted, unchanged };
+  return { changed, deleted, unchanged, hashes };
 }
 
 export async function writeCache(
