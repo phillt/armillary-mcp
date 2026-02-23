@@ -279,10 +279,12 @@ describe("generateDocIndex with plugins", () => {
     });
 
     expect(initFn).toHaveBeenCalledOnce();
-    expect(initFn).toHaveBeenCalledWith({
-      projectRoot: tmpDir,
-      tsConfigFilePath: path.join(tmpDir, "tsconfig.json"),
-    });
+    expect(initFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectRoot: tmpDir,
+        tsConfigFilePath: path.join(tmpDir, "tsconfig.json"),
+      })
+    );
     expect(disposeFn).toHaveBeenCalledOnce();
   });
 
