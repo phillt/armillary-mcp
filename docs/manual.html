@@ -138,9 +138,10 @@
 Before creating new services, utilities, or helpers, use the armillary-mcp tools to check if similar functionality already exists:
 
 1. Use `docs.search` with relevant keywords to find existing implementations
-2. Use `docs.get` to review the full signature and documentation of potential matches
-3. If a suitable symbol exists, reuse or extend it instead of creating a new one
-4. If nothing suitable exists, proceed with creating a new implementation
+2. Use `docs.list` to browse symbols — filter by `kind` (e.g. "function", "class") or `pathPrefix` (e.g. "src/utils/") to scan areas search might miss
+3. Use `docs.get` to review the full signature and documentation of any candidates
+4. If a suitable symbol exists, reuse or extend it instead of creating a new one
+5. If nothing suitable exists, proceed with creating a new implementation
 
 This prevents duplicate services and keeps the codebase consistent.</code></pre>
       </div>
@@ -157,9 +158,10 @@ globs:
 Before creating new services, utilities, or helpers, use the armillary-mcp tools to check if similar functionality already exists:
 
 1. Use `docs.search` with relevant keywords to find existing implementations
-2. Use `docs.get` to review the full signature and documentation of potential matches
-3. If a suitable symbol exists, reuse or extend it instead of creating a new one
-4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
+2. Use `docs.list` to browse symbols — filter by `kind` (e.g. "function", "class") or `pathPrefix` (e.g. "src/utils/") to scan areas search might miss
+3. Use `docs.get` to review the full signature and documentation of any candidates
+4. If a suitable symbol exists, reuse or extend it instead of creating a new one
+5. If nothing suitable exists, proceed with creating a new implementation</code></pre>
       </div>
 
       <div class="tab-panel" id="tab-prompt-windsurf" role="tabpanel">
@@ -167,9 +169,10 @@ Before creating new services, utilities, or helpers, use the armillary-mcp tools
         <pre><code>Before creating new services, utilities, or helpers, use the armillary-mcp tools to check if similar functionality already exists:
 
 1. Use `docs.search` with relevant keywords to find existing implementations
-2. Use `docs.get` to review the full signature and documentation of potential matches
-3. If a suitable symbol exists, reuse or extend it instead of creating a new one
-4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
+2. Use `docs.list` to browse symbols — filter by `kind` (e.g. "function", "class") or `pathPrefix` (e.g. "src/utils/") to scan areas search might miss
+3. Use `docs.get` to review the full signature and documentation of any candidates
+4. If a suitable symbol exists, reuse or extend it instead of creating a new one
+5. If nothing suitable exists, proceed with creating a new implementation</code></pre>
         <p>Note: Windsurf rules have a 6,000 character limit per file.</p>
       </div>
 
@@ -180,9 +183,10 @@ Before creating new services, utilities, or helpers, use the armillary-mcp tools
 Before creating new services, utilities, or helpers, use the armillary-mcp tools to check if similar functionality already exists:
 
 1. Use `docs.search` with relevant keywords to find existing implementations
-2. Use `docs.get` to review the full signature and documentation of potential matches
-3. If a suitable symbol exists, reuse or extend it instead of creating a new one
-4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
+2. Use `docs.list` to browse symbols — filter by `kind` (e.g. "function", "class") or `pathPrefix` (e.g. "src/utils/") to scan areas search might miss
+3. Use `docs.get` to review the full signature and documentation of any candidates
+4. If a suitable symbol exists, reuse or extend it instead of creating a new one
+5. If nothing suitable exists, proceed with creating a new implementation</code></pre>
         <p>You can also create a targeted instruction file at <code>.github/instructions/code-reuse.instructions.md</code> with frontmatter to scope it to specific file patterns.</p>
       </div>
 
@@ -197,21 +201,23 @@ Before creating new services, utilities, or helpers, use the armillary-mcp tools
 Before creating new services, utilities, or helpers, use the armillary-mcp tools to check if similar functionality already exists:
 
 1. Use `docs.search` with relevant keywords to find existing implementations
-2. Use `docs.get` to review the full signature and documentation of potential matches
-3. If a suitable symbol exists, reuse or extend it instead of creating a new one
-4. If nothing suitable exists, proceed with creating a new implementation</code></pre>
+2. Use `docs.list` to browse symbols — filter by `kind` (e.g. "function", "class") or `pathPrefix` (e.g. "src/utils/") to scan areas search might miss
+3. Use `docs.get` to review the full signature and documentation of any candidates
+4. If a suitable symbol exists, reuse or extend it instead of creating a new one
+5. If nothing suitable exists, proceed with creating a new implementation</code></pre>
       </div>
 
       <div class="tab-panel" id="tab-prompt-other" role="tabpanel">
         <p>
           For any other agent that supports MCP, add a system-level instruction (in whatever format
-          your agent uses) that tells it to query <code>docs.search</code> before writing new code.
+          your agent uses) that tells it to query the armillary-mcp tools before writing new code.
           The key points to include:
         </p>
         <ul>
           <li>Search the armillary-mcp documentation index before creating new services, utilities, or helpers</li>
           <li>Use <code>docs.search</code> with relevant keywords to find existing implementations</li>
-          <li>Use <code>docs.get</code> to review full signatures and documentation of potential matches</li>
+          <li>Use <code>docs.list</code> to browse symbols — filter by <code>kind</code> or <code>pathPrefix</code> to scan areas search might miss</li>
+          <li>Use <code>docs.get</code> to review full signatures and documentation of any candidates</li>
           <li>Reuse or extend existing symbols instead of creating duplicates</li>
         </ul>
       </div>
@@ -407,18 +413,24 @@ Commands:
     </p>
 
     <h3>Tool: <code>docs.list</code></h3>
-    <p>List all documented symbols. Returns an array of symbol summaries.</p>
+    <p>List documented symbols with optional filtering and pagination. Use <code>kind</code> to filter by symbol type and <code>pathPrefix</code> to scope to a directory. Returns a paginated result with a <code>nextCursor</code> for fetching additional pages.</p>
     <table>
       <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
       <tbody>
-        <tr><td colspan="4"><em>No parameters</em></td></tr>
+        <tr><td><code>kind</code></td><td>string</td><td>No</td><td>Filter by symbol kind (<code>"function"</code>, <code>"class"</code>, <code>"type"</code>, <code>"const"</code>, <code>"interface"</code>, <code>"enum"</code>, <code>"component"</code>)</td></tr>
+        <tr><td><code>pathPrefix</code></td><td>string</td><td>No</td><td>Filter to symbols whose file path starts with this prefix (e.g. <code>"src/utils/"</code>)</td></tr>
+        <tr><td><code>cursor</code></td><td>string</td><td>No</td><td>Pagination cursor from a previous response's <code>nextCursor</code></td></tr>
+        <tr><td><code>limit</code></td><td>number</td><td>No</td><td>Max results per page (default: 50)</td></tr>
       </tbody>
     </table>
     <p><strong>Response example:</strong></p>
-    <pre><code>[
-  { "id": "src/indexer.ts#generateDocIndex", "kind": "function", "name": "generateDocIndex" },
-  { "id": "src/schema.ts#DocIndex", "kind": "type", "name": "DocIndex" }
-]</code></pre>
+    <pre><code>{
+  "symbols": [
+    { "id": "src/indexer.ts#generateDocIndex", "kind": "function", "name": "generateDocIndex" },
+    { "id": "src/schema.ts#DocIndex", "kind": "type", "name": "DocIndex" }
+  ],
+  "totalFiltered": 2
+}</code></pre>
 
     <h3>Tool: <code>docs.get</code></h3>
     <p>Get the full documentation for a single symbol by its ID.</p>
@@ -449,6 +461,7 @@ Commands:
       <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
       <tbody>
         <tr><td><code>q</code></td><td>string</td><td>Yes</td><td>Search query</td></tr>
+        <tr><td><code>kind</code></td><td>string</td><td>No</td><td>Filter by symbol kind (<code>"function"</code>, <code>"class"</code>, <code>"type"</code>, <code>"const"</code>, <code>"interface"</code>, <code>"enum"</code>, <code>"component"</code>)</td></tr>
         <tr><td><code>limit</code></td><td>number</td><td>No</td><td>Max results (default: 10, max: 100)</td></tr>
       </tbody>
     </table>
@@ -574,14 +587,28 @@ await controller.waitForIdle();</code></pre>
 const index = await loadDocIndex(process.cwd());</code></pre>
     <p>Reads <code>.armillary-mcp-docs/index.json</code> relative to the given project root. Throws if the file is missing or fails Zod validation.</p>
 
-    <h3><code>listSymbols(index)</code></h3>
-    <p>Return a summary array of all symbols in an index.</p>
+    <h3><code>listSymbols(index, options?)</code></h3>
+    <p>Return a paginated, optionally filtered list of symbol summaries from an index.</p>
     <pre><code>import { loadDocIndex, listSymbols } from "armillary-mcp";
 
 const index = await loadDocIndex(process.cwd());
-const symbols = listSymbols(index);
-// [{ id: "src/foo.ts#bar", kind: "function", name: "bar" }, ...]</code></pre>
-    <p>Returns: <code>Array&lt;{ id: string; kind: string; name: string }&gt;</code></p>
+const { symbols, totalFiltered, nextCursor } = listSymbols(index, {
+  kind: "function",
+  pathPrefix: "src/utils/",
+  limit: 20,
+});</code></pre>
+
+    <p><strong><code>ListSymbolsOptions</code></strong></p>
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>kind</code></td><td>string</td><td>No</td><td>Filter by symbol kind</td></tr>
+        <tr><td><code>pathPrefix</code></td><td>string</td><td>No</td><td>Filter to symbols whose file path starts with this prefix</td></tr>
+        <tr><td><code>cursor</code></td><td>string</td><td>No</td><td>Pagination cursor from a previous <code>nextCursor</code></td></tr>
+        <tr><td><code>limit</code></td><td>number</td><td>No</td><td>Max results per page (default: 50, max: 200)</td></tr>
+      </tbody>
+    </table>
+    <p>Returns: <code>{ symbols: Array&lt;{ id: string; kind: string; name: string }&gt;, totalFiltered: number, nextCursor?: string }</code></p>
 
     <h3><code>getSymbol(index, id)</code></h3>
     <p>Look up a single symbol by its ID.</p>
@@ -591,10 +618,10 @@ if (sym) {
 }</code></pre>
     <p>Returns: <code>SymbolDoc | undefined</code></p>
 
-    <h3><code>searchSymbols(index, query, limit?)</code></h3>
+    <h3><code>searchSymbols(index, query, options?)</code></h3>
     <p>Search symbols by name or description (case-insensitive substring match).</p>
-    <pre><code>const results = searchSymbols(index, "generate", 5);</code></pre>
-    <p>The <code>limit</code> parameter is clamped between 1 and 100 (default: 10).</p>
+    <pre><code>const results = searchSymbols(index, "generate", { kind: "function", limit: 5 });</code></pre>
+    <p>The <code>limit</code> option is clamped between 1 and 100 (default: 10). The optional <code>kind</code> filter narrows results to a specific symbol type.</p>
     <p>Returns: <code>SymbolDoc[]</code></p>
 
     <h3>Zod Schemas</h3>

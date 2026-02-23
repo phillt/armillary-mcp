@@ -29,17 +29,39 @@ async function main() {
     name: "armillary-mcp",
     version: "1.0.0",
     instructions:
-      "Armillary MCP indexes TypeScript projects so you can discover and reuse existing code. Before writing new functions, utilities, or types, search the index to check if a suitable implementation already exists. Use docs.list to browse all indexed symbols, docs.search to find symbols by name or description, and docs.get to retrieve full documentation including signatures, parameters, and JSDoc annotations.",
+      "Armillary MCP indexes TypeScript projects so you can discover and reuse existing code. Before writing new functions, utilities, or types, check if a suitable implementation already exists. Use docs.search to find symbols by name or description, docs.list to browse and filter by kind or directory path, and docs.get to retrieve full documentation including signatures, parameters, and JSDoc annotations.",
   });
 
   server.tool(
     "docs.list",
-    "List all symbols indexed by armillary-mcp (id, kind, name). Use this to browse the full set of exported functions, classes, types, interfaces, enums, and constants.",
-    {},
+    "List indexed symbols with optional filtering and pagination. Use `kind` to filter by symbol type. Use `pathPrefix` to scope to a directory (e.g. \"src/utils/\"). Returns up to `limit` results per page (default 50). Pass the returned `nextCursor` as `cursor` to fetch the next page.",
+    {
+      kind: z
+        .enum([
+          "function",
+          "class",
+          "type",
+          "const",
+          "interface",
+          "enum",
+          "component",
+        ])
+        .optional(),
+      pathPrefix: z.string().optional(),
+      cursor: z.string().optional(),
+      limit: z.number().int().min(1).max(200).optional(),
+    },
     { annotations: toolAnnotations },
-    (_extra) => ({
+    ({ kind, pathPrefix, cursor, limit }, _extra) => ({
       content: [
-        { type: "text", text: JSON.stringify(listSymbols(index), null, 2) },
+        {
+          type: "text",
+          text: JSON.stringify(
+            listSymbols(index, { kind, pathPrefix, cursor, limit }),
+            null,
+            2
+          ),
+        },
       ],
     })
   );
@@ -69,14 +91,32 @@ async function main() {
 
   server.tool(
     "docs.search",
-    "Search the armillary-mcp index for symbols matching a name or description substring. Returns matching functions, types, classes, and other exports.",
-    { q: z.string(), limit: z.number().optional() },
+    "Search the armillary-mcp index for symbols matching a name or description substring. Returns matching functions, types, classes, and other exports. Use `kind` to narrow results to a specific symbol type.",
+    {
+      q: z.string(),
+      kind: z
+        .enum([
+          "function",
+          "class",
+          "type",
+          "const",
+          "interface",
+          "enum",
+          "component",
+        ])
+        .optional(),
+      limit: z.number().int().min(1).max(100).optional(),
+    },
     { annotations: toolAnnotations },
-    ({ q, limit }, _extra) => ({
+    ({ q, kind, limit }, _extra) => ({
       content: [
         {
           type: "text",
-          text: JSON.stringify(searchSymbols(index, q, limit), null, 2),
+          text: JSON.stringify(
+            searchSymbols(index, q, { kind, limit }),
+            null,
+            2
+          ),
         },
       ],
     })

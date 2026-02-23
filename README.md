@@ -49,9 +49,10 @@ Add code-reuse instructions so your agent checks the documentation index before 
 Before creating new services, utilities, or helpers, use the armillary-mcp tools to check if similar functionality already exists:
 
 1. Use `docs.search` with relevant keywords to find existing implementations
-2. Use `docs.get` to review the full signature and documentation of potential matches
-3. If a suitable symbol exists, reuse or extend it instead of creating a new one
-4. If nothing suitable exists, proceed with creating a new implementation
+2. Use `docs.list` to browse symbols — filter by `kind` (e.g. "function", "class") or `pathPrefix` (e.g. "src/utils/") to scan areas search might miss
+3. Use `docs.get` to review the full signature and documentation of any candidates
+4. If a suitable symbol exists, reuse or extend it instead of creating a new one
+5. If nothing suitable exists, proceed with creating a new implementation
 
 This prevents duplicate services and keeps the codebase consistent.
 ```
@@ -104,9 +105,9 @@ The MCP server lets AI coding assistants query your codebase:
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `docs.list` | List all documented symbols (id, kind, name) | None |
+| `docs.list` | List documented symbols with optional filtering and pagination | `kind`, `pathPrefix`, `cursor`, `limit` (all optional) |
 | `docs.get` | Get full documentation for a symbol | `id` (string, required) |
-| `docs.search` | Search symbols by name or description | `q` (string, required), `limit` (number, optional, default: 10) |
+| `docs.search` | Search symbols by name or description | `q` (string, required), `kind` (string, optional), `limit` (number, optional) |
 
 ## Programmatic API
 
@@ -128,9 +129,9 @@ const index = await generateDocIndex({
 
 // Load and query
 const loaded = await loadDocIndex(process.cwd());
-const symbols = listSymbols(loaded);
+const { symbols } = listSymbols(loaded, { kind: "function" });
 const result = getSymbol(loaded, "src/foo.ts#bar");
-const matches = searchSymbols(loaded, "generate", 5);
+const matches = searchSymbols(loaded, "generate", { limit: 5 });
 ```
 
 See the [full manual](https://philllt.github.io/armillary-mcp/manual.html) for complete API documentation including `watchAndRegenerate`, `createBuildController`, Zod schemas, and the schema reference.
