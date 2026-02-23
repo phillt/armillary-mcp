@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { generateDocIndex } from "../indexer.js";
+import type { CacheManifest } from "../cache.js";
 
 let tmpDir: string;
 
@@ -310,5 +311,244 @@ export type NumberPair = [number, number];
       expect(typeof call.file).toBe("string");
       expect(call.file.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("incremental builds", () => {
+  const cachePath = () => path.join(tmpDir, ".armillary-mcp-docs", "cache.json");
+  const opts = () => ({
+    tsConfigFilePath: path.join(tmpDir, "tsconfig.json"),
+    projectRoot: tmpDir,
+  });
+
+  it("creates cache.json after first build", async () => {
+    await fs.writeFile(
+      path.join(tmpDir, "src", "a.ts"),
+      `export const A = 1;`
+    );
+
+    await generateDocIndex(opts());
+
+    const cacheContent = await fs.readFile(cachePath(), "utf-8");
+    const cache: CacheManifest = JSON.parse(cacheContent);
+    expect(cache.cacheVersion).toBe("1");
+    expect(cache.indexVersion).toBe("1.0.0");
+    expect(cache.files["src/a.ts"]).toBeDefined();
+    expect(cache.files["src/a.ts"].symbols).toHaveLength(1);
+  });
+
+  it("incremental no-op rebuild produces identical index", async () => {
+    await fs.writeFile(
+      path.join(tmpDir, "src", "a.ts"),
+      `export function alpha() {}\nexport function beta() {}`
+    );
+
+    const index1 = await generateDocIndex(opts());
+    const index2 = await generateDocIndex(opts());
+
+    const strip = (idx: typeof index1) => ({ ...idx, generatedAt: "" });
+    expect(strip(index1)).toEqual(strip(index2));
+  });
+
+  it("modified file is re-indexed", async () => {
+    await fs.writeFile(
+      path.join(tmpDir, "src", "a.ts"),
+      `export function alpha() {}`
+    );
+
+    const index1 = await generateDocIndex(opts());
+    expect(index1.symbols.map((s) => s.name)).toEqual(["alpha"]);
+
+    await fs.writeFile(
+      path.join(tmpDir, "src", "a.ts"),
+      `export function alpha() {}\nexport function beta() {}`
+    );
+
+    const index2 = await generateDocIndex(opts());
+    expect(index2.symbols.map((s) => s.name)).toEqual(["alpha", "beta"]);
+  });
+
+  it("deleted file is removed from index", async () => {
+    await fs.writeFile(
+      path.join(tmpDir, "src", "a.ts"),
+      `export function alpha() {}`
+    );
+    await fs.writeFile(
+      path.join(tmpDir, "src", "b.ts"),
+      `export function beta() {}`
+    );
+
+    const index1 = await generateDocIndex(opts());
+    expect(index1.symbols).toHaveLength(2);
+
+    await fs.unlink(path.join(tmpDir, "src", "b.ts"));
+
+    // Update tsconfig so it doesn't reference the deleted file
+    await fs.writeFile(
+      path.join(tmpDir, "tsconfig.json"),
+      JSON.stringify({
+        compilerOptions: {
+          target: "ES2022",
+          module: "ESNext",
+          moduleResolution: "Bundler",
+          declaration: true,
+          strict: true,
+          skipLibCheck: true,
+        },
+        include: ["src"],
+      })
+    );
+
+    const index2 = await generateDocIndex(opts());
+    expect(index2.symbols).toHaveLength(1);
+    expect(index2.symbols[0].name).toBe("alpha");
+
+    // Verify cache no longer has the deleted file
+    const cache: CacheManifest = JSON.parse(
+      await fs.readFile(cachePath(), "utf-8")
+    );
+    expect(cache.files["src/b.ts"]).toBeUndefined();
+  });
+
+  it("new file is added to index", async () => {
+    await fs.writeFile(
+      path.join(tmpDir, "src", "a.ts"),
+      `export function alpha() {}`
+    );
+
+    const index1 = await generateDocIndex(opts());
+    expect(index1.symbols).toHaveLength(1);
+
+    await fs.writeFile(
+      path.join(tmpDir, "src", "b.ts"),
+      `export function beta() {}`
+    );
+
+    const index2 = await generateDocIndex(opts());
+    expect(index2.symbols).toHaveLength(2);
+    expect(index2.symbols.map((s) => s.name).sort()).toEqual(["alpha", "beta"]);
+  });
+
+  it("tsconfig change invalidates cache (full rebuild)", async () => {
+    await fs.writeFile(
+      path.join(tmpDir, "src", "a.ts"),
+      `export function alpha() {}`
+    );
+
+    await generateDocIndex(opts());
+
+    // Modify tsconfig
+    await fs.writeFile(
+      path.join(tmpDir, "tsconfig.json"),
+      JSON.stringify({
+        compilerOptions: {
+          target: "ES2022",
+          module: "ESNext",
+          moduleResolution: "Bundler",
+          declaration: true,
+          strict: false,
+          skipLibCheck: true,
+        },
+        include: ["src"],
+      })
+    );
+
+    const onProgress = vi.fn();
+    const index2 = await generateDocIndex({ ...opts(), onProgress });
+
+    // Should still produce correct output
+    expect(index2.symbols).toHaveLength(1);
+    expect(index2.symbols[0].name).toBe("alpha");
+
+    // Should have re-indexed the file (progress was called)
+    const indexingCalls = onProgress.mock.calls
+      .map((c) => c[0])
+      .filter((c) => c.phase === "indexing");
+    expect(indexingCalls.length).toBe(1);
+  });
+
+  it("incremental: true and incremental: false produce identical output", async () => {
+    await fs.writeFile(
+      path.join(tmpDir, "src", "a.ts"),
+      `export function alpha() {}`
+    );
+    await fs.writeFile(
+      path.join(tmpDir, "src", "b.ts"),
+      `export const beta = 42;`
+    );
+
+    // First build to populate cache
+    await generateDocIndex(opts());
+
+    // Incremental rebuild
+    const indexIncremental = await generateDocIndex({
+      ...opts(),
+      incremental: true,
+    });
+
+    // Full rebuild
+    const indexFull = await generateDocIndex({
+      ...opts(),
+      incremental: false,
+    });
+
+    const strip = (idx: typeof indexIncremental) => ({
+      ...idx,
+      generatedAt: "",
+    });
+    expect(strip(indexIncremental)).toEqual(strip(indexFull));
+  });
+
+  it("incremental: false skips cache", async () => {
+    await fs.writeFile(
+      path.join(tmpDir, "src", "a.ts"),
+      `export function alpha() {}`
+    );
+
+    // Delete any existing cache
+    try {
+      await fs.unlink(cachePath());
+    } catch {
+      // ignore
+    }
+
+    await generateDocIndex({ ...opts(), incremental: false });
+
+    // cache.json should not exist
+    await expect(fs.access(cachePath())).rejects.toThrow();
+  });
+
+  it("second build only re-indexes changed files", async () => {
+    await fs.writeFile(
+      path.join(tmpDir, "src", "a.ts"),
+      `export function alpha() {}`
+    );
+    await fs.writeFile(
+      path.join(tmpDir, "src", "b.ts"),
+      `export function beta() {}`
+    );
+
+    // First build indexes everything
+    const onProgress1 = vi.fn();
+    await generateDocIndex({ ...opts(), onProgress: onProgress1 });
+    const firstIndexingCalls = onProgress1.mock.calls
+      .map((c) => c[0])
+      .filter((c) => c.phase === "indexing");
+    expect(firstIndexingCalls.length).toBe(2);
+
+    // Modify only one file
+    await fs.writeFile(
+      path.join(tmpDir, "src", "a.ts"),
+      `export function alpha() {}\nexport function gamma() {}`
+    );
+
+    // Second build should only re-index the changed file
+    const onProgress2 = vi.fn();
+    await generateDocIndex({ ...opts(), onProgress: onProgress2 });
+    const secondIndexingCalls = onProgress2.mock.calls
+      .map((c) => c[0])
+      .filter((c) => c.phase === "indexing");
+    expect(secondIndexingCalls.length).toBe(1);
+    expect(secondIndexingCalls[0].file).toBe("src/a.ts");
   });
 });
