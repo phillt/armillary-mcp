@@ -22,7 +22,7 @@ export function buildIndex(raw: DocIndex): IndexedDocIndex {
       descLower: sym.description?.toLowerCase() ?? "",
     });
   }
-  return Object.assign(raw, { symbolById, searchable }) as IndexedDocIndex;
+  return { ...raw, symbolById, searchable };
 }
 
 function isIndexed(index: DocIndex): index is IndexedDocIndex {

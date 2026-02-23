@@ -55,6 +55,7 @@ function isValidCacheEnvelope(value: unknown): value is CacheManifest {
     typeof obj.indexVersion === "string" &&
     typeof obj.tsConfigHash === "string" &&
     Array.isArray(obj.pluginNames) &&
+    obj.pluginNames.every((v: unknown) => typeof v === "string") &&
     typeof obj.files === "object" &&
     obj.files !== null &&
     !Array.isArray(obj.files)
