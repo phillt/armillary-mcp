@@ -1,7 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
-import type { SymbolDoc } from "./schema.js";
+import { z } from "zod";
+import { SymbolDocSchema, type SymbolDoc } from "./schema.js";
 
 export const CACHE_VERSION = "1";
 
@@ -37,12 +38,30 @@ export async function hashFileContents(filePath: string): Promise<string> {
   return createHash("sha256").update(content).digest("hex");
 }
 
+const FileEntrySchema = z.object({
+  contentHash: z.string(),
+  symbols: z.array(SymbolDocSchema),
+});
+
+const CacheManifestSchema = z.object({
+  cacheVersion: z.string(),
+  indexVersion: z.string(),
+  tsConfigHash: z.string(),
+  pluginNames: z.array(z.string()),
+  files: z.record(z.string(), FileEntrySchema),
+});
+
+export interface LoadCacheResult {
+  manifest: CacheManifest;
+  tsConfigHash: string;
+}
+
 export async function loadCache(opts: {
   cachePath: string;
   tsConfigFilePath: string;
   pluginNames: string[];
   indexVersion: string;
-}): Promise<CacheManifest | null> {
+}): Promise<LoadCacheResult | null> {
   let raw: string;
   try {
     raw = await fs.readFile(opts.cachePath, "utf-8");
@@ -50,22 +69,16 @@ export async function loadCache(opts: {
     return null;
   }
 
-  let manifest: CacheManifest;
+  let parsed: unknown;
   try {
-    manifest = JSON.parse(raw);
+    parsed = JSON.parse(raw);
   } catch {
     return null;
   }
 
-  if (
-    !manifest ||
-    typeof manifest !== "object" ||
-    !manifest.cacheVersion ||
-    !manifest.indexVersion ||
-    !manifest.files
-  ) {
-    return null;
-  }
+  const result = CacheManifestSchema.safeParse(parsed);
+  if (!result.success) return null;
+  const manifest = result.data as CacheManifest;
 
   if (manifest.cacheVersion !== CACHE_VERSION) return null;
   if (manifest.indexVersion !== opts.indexVersion) return null;
@@ -89,7 +102,7 @@ export async function loadCache(opts: {
     return null;
   }
 
-  return manifest;
+  return { manifest, tsConfigHash: currentTsConfigHash };
 }
 
 export async function computeDiff(
