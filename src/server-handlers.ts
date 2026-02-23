@@ -48,7 +48,7 @@ export function decodeCursor(cursor: string): number {
     const parsed = JSON.parse(
       Buffer.from(cursor, "base64url").toString("utf-8")
     );
-    if (typeof parsed.o === "number" && parsed.o >= 0) return parsed.o;
+    if (typeof parsed.o === "number" && Number.isInteger(parsed.o) && parsed.o >= 0) return parsed.o;
   } catch {
     /* invalid cursor */
   }
