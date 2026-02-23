@@ -8,6 +8,8 @@ import {
   listSymbols,
   getSymbol,
   searchSymbols,
+  encodeCursor,
+  decodeCursor,
 } from "../server-handlers.js";
 
 // -- fixtures ---------------------------------------------------------------
@@ -86,6 +88,29 @@ describe("loadDocIndex", () => {
     await expect(loadDocIndex(tmpDir)).rejects.toThrow(
       "Schema validation failed"
     );
+  });
+});
+
+// -- encodeCursor / decodeCursor --------------------------------------------
+
+describe("encodeCursor / decodeCursor", () => {
+  it("round-trips correctly", () => {
+    expect(decodeCursor(encodeCursor(0))).toBe(0);
+    expect(decodeCursor(encodeCursor(50))).toBe(50);
+    expect(decodeCursor(encodeCursor(200))).toBe(200);
+  });
+
+  it("returns 0 for invalid cursor", () => {
+    expect(decodeCursor("not-valid-base64url")).toBe(0);
+  });
+
+  it("returns 0 for empty string", () => {
+    expect(decodeCursor("")).toBe(0);
+  });
+
+  it("returns 0 for negative offset in cursor", () => {
+    const bad = Buffer.from(JSON.stringify({ o: -5 })).toString("base64url");
+    expect(decodeCursor(bad)).toBe(0);
   });
 });
 
