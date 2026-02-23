@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import {
   loadDocIndex,
+  buildIndex,
   listSymbols,
   getSymbol,
   searchSymbols,
@@ -18,7 +19,7 @@ const toolAnnotations = {
 async function main() {
   let index;
   try {
-    index = await loadDocIndex(process.cwd());
+    index = buildIndex(await loadDocIndex(process.cwd()));
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     process.stderr.write(`armillary-mcp-server: ${message}\n`);

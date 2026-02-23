@@ -2,6 +2,33 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { DocIndexSchema, type DocIndex, type SymbolDoc } from "./schema.js";
 
+/** Pre-computed indexes for O(1) lookup and faster search. */
+export interface IndexedDocIndex extends DocIndex {
+  /** O(1) symbol lookup by id. */
+  symbolById: Map<string, SymbolDoc>;
+  /** Pre-lowercased fields for search. */
+  searchable: Array<{ symbol: SymbolDoc; nameLower: string; descLower: string }>;
+}
+
+/** Build runtime indexes on top of a raw DocIndex. */
+export function buildIndex(raw: DocIndex): IndexedDocIndex {
+  const symbolById = new Map<string, SymbolDoc>();
+  const searchable: IndexedDocIndex["searchable"] = [];
+  for (const sym of raw.symbols) {
+    symbolById.set(sym.id, sym);
+    searchable.push({
+      symbol: sym,
+      nameLower: sym.name.toLowerCase(),
+      descLower: sym.description?.toLowerCase() ?? "",
+    });
+  }
+  return { ...raw, symbolById, searchable };
+}
+
+function isIndexed(index: DocIndex): index is IndexedDocIndex {
+  return "symbolById" in index;
+}
+
 function sanitizeInt(value: number | undefined, fallback: number): number {
   if (value === undefined || !Number.isFinite(value)) return fallback;
   return Math.trunc(value);
@@ -98,6 +125,7 @@ export function getSymbol(
   index: DocIndex,
   id: string
 ): SymbolDoc | undefined {
+  if (isIndexed(index)) return index.symbolById.get(id);
   return index.symbols.find((s) => s.id === id);
 }
 
@@ -113,6 +141,17 @@ export function searchSymbols(
   const effectiveLimit = Math.max(1, Math.min(sanitizeInt(limit, 10), 100));
   const lowerQuery = query.toLowerCase();
   const results: SymbolDoc[] = [];
+
+  if (isIndexed(index)) {
+    for (const { symbol, nameLower, descLower } of index.searchable) {
+      if (results.length >= effectiveLimit) break;
+      if (kind && symbol.kind !== kind) continue;
+      if (nameLower.includes(lowerQuery) || descLower.includes(lowerQuery)) {
+        results.push(symbol);
+      }
+    }
+    return results;
+  }
 
   for (const symbol of index.symbols) {
     if (results.length >= effectiveLimit) break;

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import path from "node:path";
 import fs from "node:fs/promises";
 import os from "node:os";
-import { loadPlugins, findPluginFiles, type ArmillaryPlugin } from "../plugins.js";
+import { loadPlugins, findPluginFiles, findAllPluginFiles, type ArmillaryPlugin } from "../plugins.js";
 import { SymbolDocSchema } from "../schema.js";
 import { generateDocIndex } from "../indexer.js";
 import { watchAndRegenerate } from "../watcher.js";
@@ -184,6 +184,148 @@ describe("findPluginFiles", () => {
     const files = await findPluginFiles(tmpDir, [".vue"]);
     expect(files[0]).toContain("Alpha.vue");
     expect(files[1]).toContain("Zebra.vue");
+  });
+});
+
+// ── findAllPluginFiles ───────────────────────────────────────────────
+
+describe("findAllPluginFiles", () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "armillary-findall-"));
+  });
+
+  afterEach(async () => {
+    await fs.rm(tmpDir, { recursive: true });
+  });
+
+  function fakePlugin(name: string, extensions: string[]): ArmillaryPlugin {
+    return {
+      name,
+      extensions,
+      extractSymbols: () => [],
+    };
+  }
+
+  it("returns one bucket per plugin with matching files", async () => {
+    await fs.writeFile(path.join(tmpDir, "App.vue"), "");
+    await fs.writeFile(path.join(tmpDir, "main.ts"), "");
+
+    const plugins = [fakePlugin("vue-plugin", [".vue"])];
+    const buckets = await findAllPluginFiles(tmpDir, plugins);
+
+    expect(buckets).toHaveLength(1);
+    expect(buckets[0]).toHaveLength(1);
+    expect(buckets[0][0]).toContain("App.vue");
+  });
+
+  it("separates files into correct buckets for multiple plugins", async () => {
+    await fs.writeFile(path.join(tmpDir, "App.vue"), "");
+    await fs.writeFile(path.join(tmpDir, "Widget.svelte"), "");
+    await fs.writeFile(path.join(tmpDir, "main.ts"), "");
+
+    const plugins = [
+      fakePlugin("vue-plugin", [".vue"]),
+      fakePlugin("svelte-plugin", [".svelte"]),
+    ];
+    const buckets = await findAllPluginFiles(tmpDir, plugins);
+
+    expect(buckets).toHaveLength(2);
+    expect(buckets[0]).toHaveLength(1);
+    expect(buckets[0][0]).toContain("App.vue");
+    expect(buckets[1]).toHaveLength(1);
+    expect(buckets[1][0]).toContain("Widget.svelte");
+  });
+
+  it("files appear in multiple buckets when plugins share an extension", async () => {
+    await fs.writeFile(path.join(tmpDir, "Component.vue"), "");
+
+    const plugins = [
+      fakePlugin("plugin-a", [".vue"]),
+      fakePlugin("plugin-b", [".vue"]),
+    ];
+    const buckets = await findAllPluginFiles(tmpDir, plugins);
+
+    expect(buckets).toHaveLength(2);
+    expect(buckets[0]).toHaveLength(1);
+    expect(buckets[0][0]).toContain("Component.vue");
+    expect(buckets[1]).toHaveLength(1);
+    expect(buckets[1][0]).toContain("Component.vue");
+  });
+
+  it("returns empty buckets when no plugins are provided", async () => {
+    await fs.writeFile(path.join(tmpDir, "App.vue"), "");
+
+    const buckets = await findAllPluginFiles(tmpDir, []);
+    expect(buckets).toEqual([]);
+  });
+
+  it("returns empty buckets when no files match any plugin", async () => {
+    await fs.writeFile(path.join(tmpDir, "main.ts"), "");
+    await fs.writeFile(path.join(tmpDir, "style.css"), "");
+
+    const plugins = [fakePlugin("vue-plugin", [".vue"])];
+    const buckets = await findAllPluginFiles(tmpDir, plugins);
+
+    expect(buckets).toHaveLength(1);
+    expect(buckets[0]).toEqual([]);
+  });
+
+  it("sorts files within each bucket for determinism", async () => {
+    await fs.writeFile(path.join(tmpDir, "Zebra.vue"), "");
+    await fs.writeFile(path.join(tmpDir, "Alpha.vue"), "");
+
+    const plugins = [fakePlugin("vue-plugin", [".vue"])];
+    const buckets = await findAllPluginFiles(tmpDir, plugins);
+
+    expect(buckets[0][0]).toContain("Alpha.vue");
+    expect(buckets[0][1]).toContain("Zebra.vue");
+  });
+
+  it("traverses subdirectories", async () => {
+    const sub = path.join(tmpDir, "components");
+    await fs.mkdir(sub);
+    await fs.writeFile(path.join(sub, "Button.vue"), "");
+
+    const plugins = [fakePlugin("vue-plugin", [".vue"])];
+    const buckets = await findAllPluginFiles(tmpDir, plugins);
+
+    expect(buckets[0]).toHaveLength(1);
+    expect(buckets[0][0]).toContain("Button.vue");
+  });
+
+  it("excludes node_modules by default", async () => {
+    const nm = path.join(tmpDir, "node_modules", "pkg");
+    await fs.mkdir(nm, { recursive: true });
+    await fs.writeFile(path.join(nm, "Comp.vue"), "");
+
+    const plugins = [fakePlugin("vue-plugin", [".vue"])];
+    const buckets = await findAllPluginFiles(tmpDir, plugins);
+
+    expect(buckets[0]).toEqual([]);
+  });
+
+  it("handles a plugin claiming multiple extensions", async () => {
+    await fs.writeFile(path.join(tmpDir, "file.jsx"), "");
+    await fs.writeFile(path.join(tmpDir, "file.tsx"), "");
+    await fs.writeFile(path.join(tmpDir, "file.ts"), "");
+
+    const plugins = [fakePlugin("react-plugin", [".jsx", ".tsx"])];
+    const buckets = await findAllPluginFiles(tmpDir, plugins);
+
+    expect(buckets[0]).toHaveLength(2);
+    expect(buckets[0].some((f) => f.endsWith(".jsx"))).toBe(true);
+    expect(buckets[0].some((f) => f.endsWith(".tsx"))).toBe(true);
+  });
+
+  it("is case-insensitive on extension matching", async () => {
+    await fs.writeFile(path.join(tmpDir, "App.VUE"), "");
+
+    const plugins = [fakePlugin("vue-plugin", [".vue"])];
+    const buckets = await findAllPluginFiles(tmpDir, plugins);
+
+    expect(buckets[0]).toHaveLength(1);
   });
 });
 
@@ -479,6 +621,68 @@ describe("generateDocIndex with plugins", () => {
     expect(dispose1).toHaveBeenCalledOnce();
     // plugin2 never initialized, so it should NOT be disposed
     expect(dispose2).not.toHaveBeenCalled();
+  });
+
+  it("plugin batch disposal re-initializes plugins at batch boundaries", async () => {
+    // Create enough plugin files to trigger batch boundary at batchSize=2
+    for (let i = 0; i < 5; i++) {
+      await fs.writeFile(path.join(tmpDir, `comp${i}.custom`), `<custom>${i}</custom>`);
+    }
+
+    const initFn = vi.fn();
+    const disposeFn = vi.fn();
+    let initCount = 0;
+
+    const plugin: ArmillaryPlugin = {
+      name: "batch-test",
+      extensions: [".custom"],
+      init: (ctx) => {
+        initFn(ctx);
+        initCount++;
+      },
+      dispose: () => {
+        disposeFn();
+      },
+      extractSymbols: (filePath) => {
+        const name = path.basename(filePath, ".custom");
+        return [
+          {
+            id: `${name}.custom#default`,
+            kind: "component" as const,
+            name,
+            filePath: `${name}.custom`,
+            exported: true,
+          },
+        ];
+      },
+    };
+
+    const index = await generateDocIndex({
+      tsConfigFilePath: path.join(tmpDir, "tsconfig.json"),
+      projectRoot: tmpDir,
+      outputPath: path.join(tmpDir, "out.json"),
+      plugins: [plugin],
+      batchSize: 2,
+      incremental: false,
+    });
+
+    // All 5 plugin files + main.ts should be indexed
+    expect(index.symbols.length).toBeGreaterThanOrEqual(5);
+    const pluginSymbols = index.symbols.filter((s) => s.kind === "component");
+    expect(pluginSymbols).toHaveLength(5);
+
+    // init: 1 initial + 2 re-inits (at file indices 2 and 4) = 3 calls
+    // dispose: 2 batch-boundary disposes + 1 final dispose = 3 calls
+    // (The exact counts depend on how many batch boundaries are crossed.
+    //  With 5 files and batchSize=2: boundaries at index 2 and 4.)
+    expect(initFn.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(disposeFn.mock.calls.length).toBeGreaterThanOrEqual(2);
+
+    // Each re-init should receive a context with the project
+    for (const call of initFn.mock.calls) {
+      expect(call[0]).toHaveProperty("projectRoot", tmpDir);
+      expect(call[0]).toHaveProperty("tsConfigFilePath");
+    }
   });
 
   it("symbols are sorted by id for determinism", async () => {

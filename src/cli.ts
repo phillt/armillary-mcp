@@ -75,13 +75,15 @@ async function runBuild(): Promise<void> {
     };
   }
 
+  const startTime = performance.now();
   const index = await generateDocIndex({ tsConfigFilePath, projectRoot, plugins, onProgress });
+  const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
 
   if (process.stdout.isTTY) {
     process.stdout.write("\n");
   }
 
-  console.log(`\nGenerated index with ${index.symbols.length} symbols:`);
+  console.log(`\nGenerated index with ${index.symbols.length} symbols in ${elapsed}s:`);
   for (const sym of index.symbols) {
     console.log(`  ${sym.kind.padEnd(10)} ${sym.id}`);
   }
@@ -104,8 +106,9 @@ async function runWatch(): Promise<void> {
     onBuildStart: () => {
       console.log(`\n[${timestamp()}] Rebuilding index...`);
     },
-    onBuildComplete: (symbolCount) => {
-      console.log(`[${timestamp()}] Index built with ${symbolCount} symbols.`);
+    onBuildComplete: (symbolCount, elapsedMs) => {
+      const elapsed = (elapsedMs / 1000).toFixed(2);
+      console.log(`[${timestamp()}] Index built with ${symbolCount} symbols in ${elapsed}s.`);
     },
     onBuildError: (error) => {
       console.error(`[${timestamp()}] Build error:`, error);

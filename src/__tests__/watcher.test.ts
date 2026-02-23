@@ -197,7 +197,7 @@ describe("watchAndRegenerate", () => {
     try {
       // Initial build should have fired onBuildComplete
       expect(onBuildComplete).toHaveBeenCalledTimes(1);
-      expect(onBuildComplete).toHaveBeenCalledWith(1); // one symbol: hello
+      expect(onBuildComplete).toHaveBeenCalledWith(1, expect.any(Number)); // one symbol: hello
 
       const indexPath = path.join(tmpDir, ".armillary-mcp-docs", "index.json");
       const content = JSON.parse(await fs.readFile(indexPath, "utf-8"));

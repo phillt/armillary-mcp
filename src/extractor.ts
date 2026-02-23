@@ -100,25 +100,22 @@ function mergeParams(
 
 function toRelativePosixPath(filePath: string, projectRoot: string): string {
   const rel = path.relative(projectRoot, filePath);
-  return rel.split(path.sep).join("/");
+  if (path.sep === "/") return rel;
+  return rel.replaceAll(path.sep, "/");
 }
 
 export function extractFileSymbols(
   sourceFile: SourceFile,
-  projectRoot: string
+  projectRoot: string,
+  precomputedDeclarations?: ReadonlyMap<string, ExportedDeclarations[]>
 ): SymbolDoc[] {
   const symbols: SymbolDoc[] = [];
   const sourceFilePath = sourceFile.getFilePath();
   const relativePath = toRelativePosixPath(sourceFilePath, projectRoot);
 
-  const exportedDecls = sourceFile.getExportedDeclarations();
+  const exportedDecls = precomputedDeclarations ?? sourceFile.getExportedDeclarations();
 
-  // Sort by export name for determinism
-  const sortedEntries = [...exportedDecls.entries()].sort(([a], [b]) =>
-    a.localeCompare(b)
-  );
-
-  for (const [exportName, declarations] of sortedEntries) {
+  for (const [exportName, declarations] of exportedDecls.entries()) {
     for (const declaration of declarations) {
       // Skip re-exports: only process declarations from this file
       const declSourceFile = declaration.getSourceFile();

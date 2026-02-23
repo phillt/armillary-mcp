@@ -5,7 +5,7 @@ export interface WatcherOptions extends IndexerOptions {
   debounceMs?: number;
   watchPaths?: string[];
   onBuildStart?: () => void;
-  onBuildComplete?: (symbolCount: number) => void;
+  onBuildComplete?: (symbolCount: number, elapsedMs: number) => void;
   onBuildError?: (error: unknown) => void;
 }
 
@@ -146,14 +146,16 @@ export async function watchAndRegenerate(
   const extSet = pluginExtensions.size > 0 ? pluginExtensions : undefined;
 
   // Initial build
+  const initialStart = performance.now();
   const initialIndex = await generateDocIndex(indexerOptions);
-  onBuildComplete?.(initialIndex.symbols.length);
+  onBuildComplete?.(initialIndex.symbols.length, performance.now() - initialStart);
 
   const buildFn = async () => {
     onBuildStart?.();
+    const start = performance.now();
     try {
       const index = await generateDocIndex(indexerOptions);
-      onBuildComplete?.(index.symbols.length);
+      onBuildComplete?.(index.symbols.length, performance.now() - start);
     } catch (error) {
       onBuildError?.(error);
       throw error; // Re-throw so createBuildController catches it
