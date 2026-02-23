@@ -4,6 +4,16 @@
   "description": "",
   "type": "module",
   "main": "dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./plugin-react": {
+      "import": "./dist/plugins/react.js",
+      "types": "./dist/plugins/react.d.ts"
+    }
+  },
   "bin": {
     "armillary-mcp": "dist/cli.js",
     "armillary-mcp-server": "dist/server.js"
