@@ -6,11 +6,19 @@ import { extractFileSymbols } from "./extractor.js";
 import type { ArmillaryPlugin } from "./plugins.js";
 import { findPluginFiles } from "./plugins.js";
 
+export interface ProgressInfo {
+  phase: string;
+  current: number;
+  total: number;
+  file?: string;
+}
+
 export interface IndexerOptions {
   tsConfigFilePath: string;
   projectRoot: string;
   outputPath?: string;
   plugins?: ArmillaryPlugin[];
+  onProgress?: (info: ProgressInfo) => void;
 }
 
 export const EXCLUDED_PATTERNS = [

@@ -1,6 +1,6 @@
 import path from "node:path";
 import fs from "node:fs/promises";
-import { generateDocIndex } from "./indexer.js";
+import { generateDocIndex, type ProgressInfo } from "./indexer.js";
 import { watchAndRegenerate } from "./watcher.js";
 import { loadPlugins, type ArmillaryPlugin } from "./plugins.js";
 
