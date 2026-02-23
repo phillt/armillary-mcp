@@ -407,18 +407,25 @@ Commands:
     </p>
 
     <h3>Tool: <code>docs.list</code></h3>
-    <p>List all documented symbols. Returns an array of symbol summaries.</p>
+    <p>List documented symbols with optional filtering and pagination. Use <code>kind</code> to filter by symbol type and <code>pathPrefix</code> to scope to a directory. Returns a paginated result with a <code>nextCursor</code> for fetching additional pages.</p>
     <table>
       <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
       <tbody>
-        <tr><td colspan="4"><em>No parameters</em></td></tr>
+        <tr><td><code>kind</code></td><td>string</td><td>No</td><td>Filter by symbol kind (<code>"function"</code>, <code>"class"</code>, <code>"type"</code>, <code>"const"</code>, <code>"interface"</code>, <code>"enum"</code>, <code>"component"</code>)</td></tr>
+        <tr><td><code>pathPrefix</code></td><td>string</td><td>No</td><td>Filter to symbols whose file path starts with this prefix (e.g. <code>"src/utils/"</code>)</td></tr>
+        <tr><td><code>cursor</code></td><td>string</td><td>No</td><td>Pagination cursor from a previous response's <code>nextCursor</code></td></tr>
+        <tr><td><code>limit</code></td><td>number</td><td>No</td><td>Max results per page (default: 50)</td></tr>
       </tbody>
     </table>
     <p><strong>Response example:</strong></p>
-    <pre><code>[
-  { "id": "src/indexer.ts#generateDocIndex", "kind": "function", "name": "generateDocIndex" },
-  { "id": "src/schema.ts#DocIndex", "kind": "type", "name": "DocIndex" }
-]</code></pre>
+    <pre><code>{
+  "symbols": [
+    { "id": "src/indexer.ts#generateDocIndex", "kind": "function", "name": "generateDocIndex" },
+    { "id": "src/schema.ts#DocIndex", "kind": "type", "name": "DocIndex" }
+  ],
+  "totalFiltered": 2,
+  "nextCursor": null
+}</code></pre>
 
     <h3>Tool: <code>docs.get</code></h3>
     <p>Get the full documentation for a single symbol by its ID.</p>
