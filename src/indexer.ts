@@ -1,4 +1,4 @@
-import { Project, ScriptKind } from "ts-morph";
+import { Project, ScriptKind, ts } from "ts-morph";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { DocIndexSchema, type DocIndex, type SymbolDoc } from "./schema.js";
@@ -36,15 +36,29 @@ export async function generateDocIndex(
   const outputPath =
     options.outputPath ?? path.join(projectRoot, ".armillary-mcp-docs", "index.json");
 
-  const project = new Project({ tsConfigFilePath });
-  const sourceFiles = project.getSourceFiles();
+  // Resolve file list from tsconfig without loading ASTs (lightweight)
+  const configPath = path.resolve(tsConfigFilePath);
+  const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
+  const parsedConfig = ts.parseJsonConfigFileContent(
+    configFile.config,
+    ts.sys,
+    path.dirname(configPath)
+  );
+  const allFilePaths = parsedConfig.fileNames;
 
-  // Filter and sort source files by relative path for determinism
-  const filteredFiles = sourceFiles
-    .filter((sf) => !isExcluded(sf.getFilePath()))
+  // Create project with compiler options from tsconfig but skip loading all files upfront
+  const project = new Project({
+    tsConfigFilePath,
+    skipAddingFilesFromTsConfig: true,
+    skipFileDependencyResolution: true,
+  });
+
+  // Filter, convert to relative paths, and sort for determinism
+  const filteredPaths = allFilePaths
+    .filter((fp) => !isExcluded(fp))
     .sort((a, b) => {
-      const aRel = toRelativePosixPath(a.getFilePath(), projectRoot);
-      const bRel = toRelativePosixPath(b.getFilePath(), projectRoot);
+      const aRel = toRelativePosixPath(a, projectRoot);
+      const bRel = toRelativePosixPath(b, projectRoot);
       return aRel.localeCompare(bRel);
     });
 
@@ -61,11 +75,14 @@ export async function generateDocIndex(
     }
   }
 
-  for (const sourceFile of filteredFiles) {
-    const ext = path.extname(sourceFile.getFilePath()).toLowerCase();
+  // Process files one at a time to avoid loading all ASTs into memory
+  for (const filePath of filteredPaths) {
+    const ext = path.extname(filePath).toLowerCase();
     if (pluginClaimedExtensions.has(ext)) continue;
+    const sourceFile = project.addSourceFileAtPath(filePath);
     const symbols = extractFileSymbols(sourceFile, projectRoot);
     allSymbols.push(...symbols);
+    project.removeSourceFile(sourceFile);
   }
 
   // Process plugins
