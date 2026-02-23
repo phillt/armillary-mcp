@@ -115,7 +115,6 @@ export async function generateDocIndex(
       // Initialize all plugins, tracking which ones succeed
       for (let i = 0; i < plugins.length; i++) {
         const plugin = plugins[i];
-        onProgress?.({ phase: "plugins", current: i + 1, total: plugins.length, file: plugin.name });
         await plugin.init?.(pluginContext);
         initializedPlugins.push(plugin);
       }
