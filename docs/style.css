@@ -501,16 +501,6 @@ tr:nth-child(even) td {
   font-size: 0.9rem;
 }
 
-.toc li a {
-  color: var(--accent);
-  text-decoration: none;
-}
-
-.toc li a:hover {
-  color: var(--accent-hover);
-  text-decoration: underline;
-}
-
 /* ── Ordered Steps ────────────────────────────────────── */
 .steps {
   counter-reset: step;
