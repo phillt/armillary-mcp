@@ -50,8 +50,8 @@ export async function generateDocIndex(
 
   const allSymbols: SymbolDoc[] = [];
 
-  // Collect plugin-claimed extensions so we skip ts-morph extraction for those files
-  // (the files are still loaded in the Project for type resolution)
+  // Collect plugin-claimed extensions so we skip ts-morph extraction for those files;
+  // plugins are responsible for handling these files independently of the ts-morph Project.
   const pluginClaimedExtensions = new Set<string>();
   if (plugins) {
     for (const plugin of plugins) {

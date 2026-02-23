@@ -195,7 +195,7 @@ function extractProps(
 
 /**
  * Expand a props type into individual param entries.
- * Only expand direct members, skip inherited HTML attributes.
+ * Only expand direct members; skips any properties declared in node_modules.
  */
 function expandPropsType(
   propsType: Type,
