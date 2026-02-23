@@ -40,7 +40,7 @@ function toRelativePosixPath(filePath: string, projectRoot: string): string {
 export async function generateDocIndex(
   options: IndexerOptions
 ): Promise<DocIndex> {
-  const { tsConfigFilePath, projectRoot, plugins } = options;
+  const { tsConfigFilePath, projectRoot, plugins, onProgress } = options;
   const outputPath =
     options.outputPath ?? path.join(projectRoot, ".armillary-mcp-docs", "index.json");
 
@@ -94,9 +94,11 @@ export async function generateDocIndex(
   }
 
   // Process files one at a time to avoid loading all ASTs into memory
-  for (const filePath of filteredPaths) {
+  for (let i = 0; i < filteredPaths.length; i++) {
+    const filePath = filteredPaths[i];
     const ext = path.extname(filePath).toLowerCase();
     if (pluginClaimedExtensions.has(ext)) continue;
+    onProgress?.({ phase: "indexing", current: i + 1, total: filteredPaths.length, file: toRelativePosixPath(filePath, projectRoot) });
     const sourceFile = project.addSourceFileAtPath(filePath);
     const symbols = extractFileSymbols(sourceFile, projectRoot);
     allSymbols.push(...symbols);
