@@ -112,19 +112,29 @@ export async function generateDocIndex(
 
     try {
       // Initialize all plugins, tracking which ones succeed
-      for (const plugin of plugins) {
+      for (let i = 0; i < plugins.length; i++) {
+        const plugin = plugins[i];
+        onProgress?.({ phase: "plugins", current: i + 1, total: plugins.length, file: plugin.name });
         await plugin.init?.(pluginContext);
         initializedPlugins.push(plugin);
       }
 
+      let pluginFileIndex = 0;
+      // Count total plugin files for progress reporting
+      const pluginFileLists: string[][] = [];
       for (const plugin of plugins) {
-        const files = await findPluginFiles(
-          projectRoot,
-          plugin.extensions,
-          EXCLUDED_PATTERNS
-        );
+        const files = await findPluginFiles(projectRoot, plugin.extensions, EXCLUDED_PATTERNS);
+        pluginFileLists.push(files);
+      }
+      const totalPluginFiles = pluginFileLists.reduce((sum, f) => sum + f.length, 0);
+
+      for (let pi = 0; pi < plugins.length; pi++) {
+        const plugin = plugins[pi];
+        const files = pluginFileLists[pi];
 
         for (const filePath of files) {
+          pluginFileIndex++;
+          onProgress?.({ phase: "plugins", current: pluginFileIndex, total: totalPluginFiles, file: toRelativePosixPath(filePath, projectRoot) });
           const content = await fs.readFile(filePath, "utf-8");
 
           if (plugin.extractSymbols) {
