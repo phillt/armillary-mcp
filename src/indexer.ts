@@ -50,7 +50,20 @@ export async function generateDocIndex(
 
   const allSymbols: SymbolDoc[] = [];
 
+  // Collect plugin-claimed extensions so we skip ts-morph extraction for those files;
+  // plugins are responsible for handling these files independently of the ts-morph Project.
+  const pluginClaimedExtensions = new Set<string>();
+  if (plugins) {
+    for (const plugin of plugins) {
+      for (const ext of plugin.extensions) {
+        pluginClaimedExtensions.add(ext.toLowerCase());
+      }
+    }
+  }
+
   for (const sourceFile of filteredFiles) {
+    const ext = path.extname(sourceFile.getFilePath()).toLowerCase();
+    if (pluginClaimedExtensions.has(ext)) continue;
     const symbols = extractFileSymbols(sourceFile, projectRoot);
     allSymbols.push(...symbols);
   }
@@ -81,10 +94,13 @@ export async function generateDocIndex(
             const symbols = await plugin.extractSymbols(filePath, content);
             const relativePath = toRelativePosixPath(filePath, projectRoot);
             for (const sym of symbols) {
-              if (!sym.filePath || path.isAbsolute(sym.filePath)) {
+              const filePathChanged = !sym.filePath || path.isAbsolute(sym.filePath);
+              if (filePathChanged) {
                 sym.filePath = relativePath;
               }
-              sym.id = `${sym.filePath}#${sym.name}`;
+              if (!sym.id || filePathChanged) {
+                sym.id = `${sym.filePath}#${sym.name}`;
+              }
             }
             allSymbols.push(...symbols);
           } else if (plugin.extract) {

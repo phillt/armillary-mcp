@@ -16,4 +16,10 @@ export default defineConfig([
     format: ["esm"],
     banner: { js: "#!/usr/bin/env node" },
   },
+  {
+    entry: ["src/plugins/react.ts"],
+    format: ["esm"],
+    dts: true,
+    outDir: "dist/plugins",
+  },
 ]);

@@ -477,7 +477,7 @@ tr:nth-child(even) td {
 
 .toc-inner {
   position: sticky;
-  top: 3.5rem;
+  top: 3.8rem;
   max-height: calc(100vh - 3.5rem);
   overflow-y: auto;
   padding: 1.25rem 1rem;
@@ -490,8 +490,10 @@ tr:nth-child(even) td {
   margin-bottom: 0.75rem;
 }
 
-.toc ol {
+.toc ol,
+.toc ul {
   padding-left: 1.25rem;
+  list-style: none;
 }
 
 .toc li {

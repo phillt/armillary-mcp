@@ -47,7 +47,7 @@
     <aside class="toc">
       <nav class="toc-inner">
         <h2>Contents</h2>
-        <ol>
+        <ul>
           <li><a href="#why">Why?</a></li>
           <li><a href="#quick-setup">Quick Setup</a></li>
           <li><a href="#cli">CLI Usage</a></li>
@@ -57,7 +57,7 @@
           <li><a href="#configuration">Configuration</a></li>
           <li><a href="#plugins">Plugins</a></li>
           <li><a href="#output-format">Output Format</a></li>
-        </ol>
+        </ul>
       </nav>
     </aside>
 
@@ -681,11 +681,83 @@ const parsed = DocIndexSchema.parse(rawJson);</code></pre>
 
     <p>
       By default armillary-mcp indexes <code>.ts</code> and <code>.tsx</code> files using TypeScript's
-      compiler. <strong>Plugins</strong> extend this to additional file types — Vue, Svelte, or any
-      custom format — so every component in your project is discoverable by your AI coding assistant.
+      compiler. The package ships with a <strong>built-in React plugin</strong> that upgrades
+      <code>.tsx</code> processing — detecting components, extracting props, and resolving default
+      export names. <strong>Third-party plugins</strong> extend indexing to additional file types like
+      Vue and Svelte.
     </p>
 
+    <h3>Built-in: React Plugin</h3>
+
+    <p>
+      The React plugin enriches <code>.tsx</code> indexing so your AI coding assistant sees components
+      as first-class symbols instead of plain functions.
+    </p>
+
+    <h4>What it does</h4>
+    <ul>
+      <li><strong>Detects React components</strong> — function declarations, arrow functions, <code>React.FC</code>, <code>forwardRef</code>, and <code>memo</code> wrappers — and classifies them as <code>kind: "component"</code> instead of <code>"function"</code> or <code>"const"</code>.</li>
+      <li><strong>Expands props</strong> — the props interface is expanded into individual <code>params</code> entries so agents can see each prop's name and type.</li>
+      <li><strong>Resolves default export names</strong> — <code>export default function App()</code> is indexed as <code>"App"</code> instead of <code>"default"</code>.</li>
+    </ul>
+
+    <h4>How to enable</h4>
+    <p>Add an <code>armillary-mcp</code> section to your <code>package.json</code>:</p>
+    <pre><code>{
+  "armillary-mcp": {
+    "plugins": ["armillary-mcp/plugin-react"]
+  }
+}</code></pre>
+    <p>No extra install — the plugin ships with the package.</p>
+
+    <h4>What it detects</h4>
+    <p>Any PascalCase export that matches one of these patterns is classified as a component:</p>
+    <ul>
+      <li>Function declaration returning JSX — <code>function Card() { return &lt;div/&gt; }</code></li>
+      <li>Arrow function returning JSX — <code>const Card = () =&gt; &lt;div/&gt;</code></li>
+      <li><code>React.FC&lt;Props&gt;</code> annotation — <code>const Card: React.FC&lt;CardProps&gt; = …</code></li>
+      <li><code>forwardRef</code> wrapper — <code>const Input = forwardRef&lt;…&gt;(…)</code></li>
+      <li><code>memo</code> wrapper — <code>const List = memo(function List() { … })</code></li>
+    </ul>
+    <p>Non-PascalCase exports (hooks like <code>useAuth</code>, utilities) are left unchanged.</p>
+
+    <h4>Before / after</h4>
+    <p>Given a component like:</p>
+    <pre><code>interface CardProps {
+  title: string;
+  onClick?: () =&gt; void;
+}
+
+export function Card({ title, onClick }: CardProps) {
+  return &lt;div onClick={onClick}&gt;{title}&lt;/div&gt;;
+}</code></pre>
+
+    <p><strong>Without the plugin</strong>, the index entry looks like:</p>
+    <pre><code>{
+  "kind": "function",
+  "name": "Card",
+  "params": [
+    { "name": "{ title, onClick }", "type": "CardProps" }
+  ]
+}</code></pre>
+
+    <p><strong>With the plugin</strong>:</p>
+    <pre><code>{
+  "kind": "component",
+  "name": "Card",
+  "params": [
+    { "name": "title", "type": "string" },
+    { "name": "onClick", "type": "() =&gt; void" }
+  ]
+}</code></pre>
+
+    <div class="tip">
+      <p><strong>Tip:</strong> The React plugin handles both <code>.tsx</code> and <code>.jsx</code> files. It uses the <code>extractSymbols</code> strategy internally, reusing the core TypeScript extractor and enriching the output.</p>
+    </div>
+
     <h3>Using Plugins</h3>
+
+    <p>This section covers third-party and custom plugins. For the built-in React plugin, see above.</p>
 
     <h4>1. Install the plugin</h4>
     <p>Plugins are regular npm packages. Install them alongside armillary-mcp:</p>
